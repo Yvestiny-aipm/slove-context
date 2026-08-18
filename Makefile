@@ -9,8 +9,8 @@ install:
 
 # Collects tests/ (healthz + request_id + audit + story + canon + snapshot +
 # scene + llm gateway + scene plan / scene draft / candidate extract +
-# human approve / submit + scene / chapter summaries + validation run)
-# and contracts/ (0.4).
+# human approve / submit + scene / chapter summaries + validation run +
+# repair task) and contracts/ (0.4).
 # No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts
