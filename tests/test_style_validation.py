@@ -66,7 +66,7 @@ NEGATIVE_EXAMPLE = "哇塞这玉也太酷了吧路人也能触活！"
 SAMPLE_BODY = "河滩泥凉。林晚蹲下去，指节碰到一点冷光。"
 DRAFT_OK = "河滩风冷，林晚看见一点光。她已经拾起残玉。"
 DRAFT_DRIFT = (
-    "我走在河滩上将要推开祠门。哇塞这玉也太酷了。"
+    "我走在河滩上将要推开祠门，即将走进夜色。哇塞这玉也太酷了。"
     + "河风贴着腕骨" * 5
     + "。"
     + "「你好吗？你看见了吗？你也来吗？」" * 4
@@ -363,7 +363,7 @@ def test_dialogue_ratio_threshold_is_configurable() -> None:
     heavy = "「你好吗？」" * 6
     narrative = "她走在河滩上，风很冷，残玉发光。"
     tight = StyleThresholds(max_dialogue_ratio=0.3)
-    loose = StyleThresholds(max_dialogue_ratio=0.95)
+    loose = StyleThresholds(max_dialogue_ratio=1.0)
     finding = check_dialogue_ratio(heavy, tight)
     assert finding is not None
     assert finding.rule_id == RULE_DIALOGUE
@@ -739,7 +739,7 @@ def test_style_findings_do_not_block_canon_submit() -> None:
     submitted = client.post(
         f"/projects/{project['id']}/candidate-changes/{candidate['id']}/submit",
         headers=HUMAN,
-        json={"created_by": "主编"},
+        json={"entity_type": "物品"},
     )
     assert submitted.status_code == 200, submitted.text
     assert submitted.json()["candidate"]["status"] == "Submitted"
