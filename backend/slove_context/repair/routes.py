@@ -164,6 +164,9 @@ def _service(request: Request) -> RepairService:
         llm_gateway=gateway,
         task_type=getattr(request.app.state, "scene_draft_task_type", DRAFT_TASK_TYPE),
         auto_run=bool(getattr(request.app.state, "scene_draft_auto_run", True)),
+        context_pack_repository=getattr(
+            request.app.state, "context_pack_repository", None
+        ),
     )
     extract_service = CandidateChangeService(
         story_repository=story,

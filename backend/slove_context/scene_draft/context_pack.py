@@ -1,8 +1,8 @@
-"""Pre-frozen static Context Pack (node 3.4).
+"""Pre-frozen static Context Pack (node 3.4 fixture).
 
-There is no Context Pack builder in this node. Jobs must reference the
-fixture id below. Unknown or missing ids are rejected. The pack is
-read-only context, not writable Canon.
+Node 3.4 jobs may still reference this fixture id. Node 6.1 adds a
+real assembler; Scene Draft also accepts a frozen assembler-produced
+pack id. The pack is read-only context, not writable Canon.
 """
 
 from __future__ import annotations

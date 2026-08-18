@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 5.2：Repair Task（仅 Fake Provider / 内存仓库）。不要启动节点 6.x（不要实现 Outline / Context Pack 组装器）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 6.1：Context Pack 组装器（确定性规则；对照已批准 Scene Card / 已写定 Story Spec / 冻结 Canon Snapshot）。不要启动节点 6.2（不要实现 Outline）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要抽取候选。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Outline / Context Pack 组装器或生成器。节点 5.2 只做 Repair Task。修复完成不是批准，不写 Canon。再校验通过只表示可交裁决。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Outline 或生成器。节点 6.1 只做 Context Pack 组装。包不是 Canon。冻结不是批准，不写 Canon。
 
 ## 已冻结、默认不可改
 
@@ -365,4 +365,29 @@ cd backend && alembic upgrade head
 - 写既有 `AuditWriter`，沿用 1.3 脱敏。
 - 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–5.1 API。
-- **不是** 节点 6.x 的 Outline / Context Pack 组装器、自动批准、向量检索、真实模型供应商客户端。
+- **不是** 节点 6.x 当时尚未交付的 Outline / Context Pack 组装器、自动批准、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 6.1）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task，以及 Context Pack 组装（Generate / Validate、缺卡 / 规格 / 快照拒绝、不写 Canon、无章级包入口）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `context_packs`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task 表，不建 Outline / 真实模型网关表。
+
+## 节点 6.1 边界
+
+- 输入：一场场景 + 已批准 Scene Card + 已写定 / 生效 Story Spec + Canon Snapshot。卡未批准、规格未写定、快照缺失或未冻结、场景缺失则拒绝开组。
+- 输出：对照 `contracts/context-pack.schema.json` 的 Context Pack。`purpose` 仅 Generate / Validate。`canon_excerpts` 是指定 Snapshot 的只读摘录，不得写回 Canon。
+- 生成单位为单个场景。无章级或全书级 Context Pack。
+- 冻结后只读：再组装出新 Revision / 新 id，不得覆盖旧行。冻结 Context Pack 不是 Canon 批准。
+- 确定性复制 / 过滤 Snapshot 事实 + Spec + Card。禁止调用真实模型。
+- 失败 / 取消保留记录，不删除。不批准、不提交、不抽取候选。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
+- 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 3.4 Scene Draft 仍接受静态夹具 `context_pack_id`，也接受组装器产出的已冻结包。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–5.2 API。
+- **不是** 节点 6.2 的 Outline、自动批准、向量检索、真实模型供应商客户端。
