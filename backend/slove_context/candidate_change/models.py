@@ -1,11 +1,17 @@
-"""In-process Candidate Change extract job and candidate records (node 4.1).
+"""In-process Candidate Change extract job and candidate records.
 
-A Candidate Change is a proposal extracted from one Scene Draft. It is
-not Canon and cannot auto-approve. Initial status is Extracted only.
+Node 4.1: extraction. A Candidate Change is a proposal extracted from
+one Scene Draft. It is not Canon and cannot auto-approve. Initial
+status is Extracted only.
+
+Node 4.2: human approve / reject / submit. Approve records a verdict
+only and does not write Canon. Submit (Approved → Submitted) is the
+human commit path that creates or supersedes a Canon Fact. The
+candidate remains a candidate; it never becomes a Canon Fact.
 
 Extract batches are append-only: a failed or cancelled job is kept; a
 later trigger creates a new job and a new batch. Prior candidates are
-not overwritten or deleted.
+not overwritten or deleted. Failure / cancel / reject keep records.
 
 Job states: queued / running / repair / succeeded / failed / cancelled.
 
@@ -46,6 +52,56 @@ JOB_REUSABLE_STATES = frozenset({JOB_QUEUED, JOB_RUNNING, JOB_SUCCEEDED})
 JOB_CANCELLABLE_STATES = frozenset({JOB_QUEUED, JOB_RUNNING})
 
 CANDIDATE_EXTRACTED = "Extracted"
+CANDIDATE_VALIDATING = "Validating"
+CANDIDATE_FAILED_VALIDATION = "FailedValidation"
+CANDIDATE_AWAITING_VERDICT = "AwaitingVerdict"
+CANDIDATE_APPROVED = "Approved"
+CANDIDATE_REJECTED = "Rejected"
+CANDIDATE_SUBMITTED = "Submitted"
+CANDIDATE_FAILED = "Failed"
+CANDIDATE_CANCELLED = "Cancelled"
+CANDIDATE_REWORK = "Rework"
+
+CANDIDATE_STATUSES = frozenset(
+    {
+        CANDIDATE_EXTRACTED,
+        CANDIDATE_VALIDATING,
+        CANDIDATE_FAILED_VALIDATION,
+        CANDIDATE_AWAITING_VERDICT,
+        CANDIDATE_APPROVED,
+        CANDIDATE_REJECTED,
+        CANDIDATE_SUBMITTED,
+        CANDIDATE_FAILED,
+        CANDIDATE_CANCELLED,
+        CANDIDATE_REWORK,
+    }
+)
+
+# Approve is allowed only from AwaitingVerdict (0.3).
+APPROVE_FROM = frozenset({CANDIDATE_AWAITING_VERDICT})
+# Reject is allowed from AwaitingVerdict or Approved (before submit).
+REJECT_FROM = frozenset({CANDIDATE_AWAITING_VERDICT, CANDIDATE_APPROVED})
+# Submit is allowed only from Approved. Duplicate submit is rejected
+# (409); it is not idempotent and must not double-write Canon.
+SUBMIT_FROM = frozenset({CANDIDATE_APPROVED})
+
+# Test helper only: skip Validate (5.x). Never an approve or submit path.
+SEEDABLE_STATUSES = frozenset(
+    {
+        CANDIDATE_AWAITING_VERDICT,
+        CANDIDATE_VALIDATING,
+        CANDIDATE_FAILED_VALIDATION,
+        CANDIDATE_FAILED,
+        CANDIDATE_REWORK,
+        CANDIDATE_CANCELLED,
+    }
+)
+
+DECISION_APPROVE = "Approve"
+DECISION_REJECT = "Reject"
+DECISION_VALUES = frozenset({DECISION_APPROVE, DECISION_REJECT})
+
+APPROVED_STATUSES = frozenset({CANDIDATE_APPROVED, CANDIDATE_SUBMITTED})
 
 ATTEMPT_GENERATE = "generate"
 ATTEMPT_REPAIR = "repair"
@@ -75,17 +131,26 @@ class CandidateChange:
     created_at: str
     created_by: str
     payload: dict[str, Any]
+    approval_decision: dict[str, Any] | None = None
+    submitted_canon_fact_id: str | None = None
+    superseded_canon_fact_id: str | None = None
 
     def to_public_dict(self) -> dict[str, Any]:
         public = dict(self.payload)
         public["extract_batch"] = self.extract_batch
         public["draft_id"] = self.draft_id
         public["job_id"] = self.job_id
+        public["status"] = self.status
         public["is_canon"] = False
         public["is_canon_fact"] = False
-        public["is_approved"] = False
+        public["is_approved"] = self.status in APPROVED_STATUSES
         public["auto_approved"] = False
         public["writes_canon"] = False
+        public["approval_decision"] = (
+            dict(self.approval_decision) if self.approval_decision is not None else None
+        )
+        public["submitted_canon_fact_id"] = self.submitted_canon_fact_id
+        public["superseded_canon_fact_id"] = self.superseded_canon_fact_id
         return public
 
     def to_audit_dict(self) -> dict[str, Any]:
@@ -106,8 +171,15 @@ class CandidateChange:
             "status": self.status,
             "is_canon": False,
             "is_canon_fact": False,
-            "is_approved": False,
+            "is_approved": self.status in APPROVED_STATUSES,
             "writes_canon": False,
+            "approval_decision_id": (
+                self.approval_decision.get("id")
+                if isinstance(self.approval_decision, dict)
+                else None
+            ),
+            "submitted_canon_fact_id": self.submitted_canon_fact_id,
+            "superseded_canon_fact_id": self.superseded_canon_fact_id,
         }
 
 

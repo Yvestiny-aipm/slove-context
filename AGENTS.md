@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 4.1：Candidate Change 抽取作业（仅 Fake Provider）。不要启动节点 4.2（不要实现 Validate / Validation Run）。不要批准或提交 Canon。不要写 Scene/Chapter 摘要。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 4.2：Candidate Change 人类批准与提交 Canon。不要启动节点 4.3。不要实现 Validation Run / Validate（那是 5.x）。不要写 Scene/Chapter 摘要。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Validate / Validation Run、Context Pack 组装器或生成器。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Validate / Validation Run、Context Pack 组装器或生成器。节点 4.2 只做人类批准 / 拒绝 / 提交。
 
 ## 已冻结、默认不可改
 
@@ -259,7 +259,34 @@ cd backend && alembic upgrade head
 - 幂等：同一 `idempotency_key` 在 queued / running / succeeded 时返回原作业；取消为终态且不删除；失败作业可再开新作业（追加抽取批次，不覆盖旧候选）。
 - 仅 Fake Provider + 夹具。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
-- Candidate Change 不是 Canon Fact。作业不写 Canon。无 Validate（4.2）、无人工批准 / 提交、无 Scene / Chapter 摘要。
+- Candidate Change 不是 Canon Fact。作业不写 Canon。无 Validate、无人工批准 / 提交（4.2）、无 Scene / Chapter 摘要。
 - 生成 / 抽取单位为单个场景。无「生成一整章」入口。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–3.4 API。
-- **不是** 节点 4.2 的 Validate / Validation Run、节点 4.3 的批准 / 提交、Context Pack 组装器、向量检索、真实模型供应商客户端。
+- **不是** 节点 4.2 的人工批准 / 提交、Validation Run（5.x）、Context Pack 组装器、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 4.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取作业，以及 Candidate Change 人类批准 / 拒绝 / 提交（Fake / 内存：批准不写 Canon、提交才创建或 supersede、非人类 403、Extracted 不能批准、拒绝不写 Canon、二次提交拒绝且不双写）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，在 `candidate_changes` 上增量加批准裁决与提交事实引用列。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract 表，不建 Validation Run / Context Pack 组装 / 摘要 / 真实模型网关表。
+
+## 节点 4.2 边界
+
+- 输入：已处于 AwaitingVerdict 的 Candidate Change（本节点不实现 Validate；测试可直接种入 AwaitingVerdict）。
+- Approval Decision 对照 `contracts/approval-decision.schema.json`（Draft 2020-12）；`created_by` 必须是人工主编。
+- Approve：仅 AwaitingVerdict → Approved。只记录裁决，**不写 Canon**。
+- Reject：AwaitingVerdict 或 Approved（提交前）→ Rejected。不写 Canon。记录保留。
+- Submit：仅 Approved → Submitted。此时才创建新 Canon Fact，或 supersede 已有 Active 事实（复用 2.2 只追加 / supersede；禁止就地改 Active）。本对象仍是已提交的候选，**不变成** Canon Fact。
+- Extracted / Validating / FailedValidation / Failed / Rework / Cancelled 不得 Approve 或 Submit。
+- 仅人工主编可批准与提交（`X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent / 模型 / bot 不可。无自动批准。Approved 不得自动变成 Submitted。
+- 二次提交：拒绝（409），不幂等，不双写 Canon。
+- 失败 / 取消 / 拒绝保留记录，不删除。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
+- 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–4.1 API。
+- **不是** 节点 4.3、Validation Run / Validate（5.x）、Scene / Chapter 摘要、Context Pack 组装器、向量检索、真实模型供应商客户端。

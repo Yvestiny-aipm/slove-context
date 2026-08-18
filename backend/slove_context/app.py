@@ -10,6 +10,8 @@ Node 3.2: LLM Gateway as an in-process Fake Provider (no live vendor calls).
 Node 3.3: Scene Plan generation jobs (Fake Provider only).
 Node 3.4: Scene Draft generation jobs (Fake Provider only).
 Node 4.1: Candidate Change extraction jobs (Fake Provider only; no Validate).
+Node 4.2: human approve / reject / submit for Candidate Changes.
+Approve does not write Canon; submit creates or supersedes a Canon Fact.
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, and Candidate Change are not Canon.
