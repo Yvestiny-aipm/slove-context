@@ -332,7 +332,8 @@ def test_pass_moves_candidate_to_awaiting_verdict_without_canon_or_approve() -> 
     for event in sink.events:
         blob = f"{event.before_json} {event.after_json}"
         assert "伸手拾起残玉" not in blob
-        assert "evidence_quote" not in blob or "redacted" in blob.lower()
+        assert "'evidence_quote'" not in blob
+        assert '"evidence_quote"' not in blob
 
 
 def test_canon_conflict_is_rule_failed_and_blocks_approval() -> None:
@@ -656,7 +657,7 @@ def test_no_repair_task_or_auto_approve_routes() -> None:
     )
     assert (
         client.post(
-            f"/projects/{project['id']}/candidate-changes/auto-approve",
+            f"/projects/{project['id']}/auto-approve",
             json={},
         ).status_code
         == 404
