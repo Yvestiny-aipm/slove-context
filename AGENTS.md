@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 7.1：Style Guide / Style Sample（仅 Fake / 内存仓库）。不要启动节点 7.2（不要实现风格打分 / 查重）。不要启动节点 7.3。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要抽取候选。
+一次只实现一个已冻结节点。当前节点是 7.2：Style Validation v1（仅 Fake / 内存仓库）。不要启动节点 7.3（不要实现审校队列）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要抽取候选。风格发现默认不阻断 Canon 提交。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。
 
-开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、风格打分或生成器。节点 7.1 只做版本化 Style Guide / Style Sample。批准风格资产不是 Canon 批准，不写 Canon。
+开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用或生成器。节点 7.2 只做 Style Validation v1。批准风格资产不是 Canon 批准，不写 Canon。风格校验不是 5.x Validation Run。
 
 ## 已冻结、默认不可改
 
@@ -443,3 +443,27 @@ cd backend && alembic upgrade head
 - 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–6.2 API。
 - **不是** 节点 7.2 风格打分 / 查重、节点 7.3、自动批准、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 7.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample，以及 Style Validation（七项确定性检查各有单元测试、阈值可配、未批准 Guide / 未授权 Sample 不得用于 LLM 检查、禁止在世作家仿写评分、风格报告不写 Canon、风格发现默认不阻断 Canon 提交、失败 / 取消不删除、2.1–7.1 API 仍在）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `style_validations`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide 表，不建审校队列 / 真实模型网关表。
+
+## 节点 7.2 边界
+
+- 输入：一场不可变 Scene Draft 修订 + 可选已批准 Style Guide / 已授权 Style Sample + 可配置阈值。
+- 七项确定性检查（无人模型）：人称、时态标记、禁用词、超长句比例、段落长度、对话比例、重复 n-gram。阈值可配。超阈值默认 warning，不是 5.x 硬规则。
+- LLM 检查仅 Fake Provider：只判断是否符合本项目已批准 Style Guide。禁止要求仿写在世作家。禁止把未授权 / 未批准 Sample 当风格参照。无已批准 Guide 时跳过或拒绝并给出显式 `llm_status`，不得从散文发明风格。
+- 报告含 problem / text evidence / severity / minimal fix，并持久化 `rule_version` 与（若跑了 LLM）`llm_score_version`，可再读。`blocks_canon_submit` 默认 false。
+- 风格校验与 5.x 硬一致性规则分开。风格发现默认不阻断 Canon 提交。不改 5.x Validation Run 语义。不改 3.4 生成作业。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；正例 / 反例 / 样本正文 / 完整草稿散文不得入审计。
+- 失败 / 取消保留记录，不删除。
+- 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–7.1 API。
+- **不是** 节点 7.3 审校队列、自动批准、向量检索、真实模型供应商客户端、把风格发现默认写成 Canon 阻断。
