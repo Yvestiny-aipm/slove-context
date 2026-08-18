@@ -325,7 +325,6 @@ def test_healthz_and_prior_apis_remain() -> None:
     assert "/projects/{project_id}/batch" not in paths
     assert "/projects/{project_id}/batches" not in paths
     assert "/eval-sets" not in paths
-    assert "/experiments" not in paths
     assert not any("seed-status" in path for path in paths)
     assert not any("openai" in path for path in paths)
 

@@ -14,10 +14,10 @@ slove context
 | `AGENTS.md` | 实现约定（八条规则）与常用命令示例 |
 | `docs/` | 已冻结范围 / 术语 / 状态机，骨架边界 `architecture.md`，以及 `audit.md` |
 | `contracts/` | 已批准 JSON Schema（节点 0.4） |
-| `backend/` | FastAPI 应用（`/healthz`、`/version`、2.1–8.4 API：含单场景 DAG 与批量调度；无真实模型客户端）与 9.1 评测 runner |
-| `backend/alembic/` | 可审阅迁移至 `021_schedule`（单元测试不连库） |
-| `evals/` | 节点 9.1 叙事一致性评测案例 / 夹具 / 期望（确定性 runner，不写 Canon） |
-| `tests/` | 进程内测试（含 8.4 批量调度与 9.1 评测）；`make test` 也会跑 contracts 测试 |
+| `backend/` | FastAPI 应用（`/healthz`、`/version`、2.1–9.2 API：含单场景 DAG、批量调度与实验运行；无真实模型客户端）与 9.1 评测 runner |
+| `backend/alembic/` | 可审阅迁移至 `022_experiments`（单元测试不连库） |
+| `evals/` | 节点 9.1 叙事一致性评测案例 / 夹具 / 期望（确定性 runner，不写 Canon；9.2 只读引用） |
+| `tests/` | 进程内测试（含 8.4 批量调度、9.1 评测与 9.2 实验运行）；`make test` 也会跑 contracts 测试 |
 | `scripts/` | 脚本目录占位 |
 | `data/` | 本地数据占位（不提交密钥或模型输出） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） |
@@ -151,7 +151,14 @@ cd backend && alembic upgrade head
 
 - 数据在 `evals/cases/`、`evals/fixtures/`、`evals/expected/`。每案含 Story Spec、Canon Snapshot、Scene Card、Context Pack、Draft、期望候选与违规，以及难度 / 规则类别 / 严重度 / 人工裁决依据。
 - 确定性 runner：`python -m slove_context.evals --out /tmp/narrative-eval.json`。复用 5.x 硬规则；仅伏笔遗失使用 eval-only 检查。不写 Canon，不批准，不调真实模型。
-- 不是 9.2 实验对比，不是 9.3 发布门。无评测 HTTP 路由。
+- 不是 9.3 发布门。无评测 HTTP 路由。9.2 实验运行只读引用本案例集。
+
+### 实验运行与基线对比（节点 9.2）
+
+- 钉死 9.1 案例后可替换 model / prompt_version / retrieval_strategy / temperature / max_tokens。
+- 每条 Run 记录完整配置、输入版本、输出引用、六项指标、token 成本与延迟。可与基线 Run 对比并导出 CSV / JSON。
+- 历史 Run 只读。改 prompt_version 出新 Run，未冻结 Prompt 不得覆盖旧记录。
+- 仅 Fake Provider。不写 Canon，不批准。不是 9.3 发布门。
 
 ## 测试
 
@@ -161,7 +168,7 @@ make test
 python3 -m pytest tests contracts
 ```
 
-`tests/test_healthz.py` 用 FastAPI `TestClient` 在进程内检查 `/healthz`（以及 `/version`）。`tests/test_request_id.py` 检查 `X-Request-ID` 与 JSON 请求日志字段。`tests/test_audit.py` 检查审计写入与脱敏。`tests/test_story_project_spec.py` 检查 Story Project / Spec（schema 422、未批准不得当作已批准、已批准禁止 PATCH）。`tests/test_canon.py` 检查 Canon 实体 / 证据 / 事实（NotInCanon 创建、仅人工主编批准或废弃、故事时间查询、supersede 只追加）。`tests/test_canon_snapshot.py` 检查 Snapshot 创建 / 冻结 / 查询 / diff / 回放（后期新事实不得泄漏、仅人类冻结、稳定排序）。`tests/test_scene_card.py` 检查 Scene Card / 顺序 / 依赖（schema 422、依赖阻断可生成、环依赖、故事顺序冲突、仅人类批准）。`tests/test_llm_gateway.py` 检查 LLM Gateway（Fake 夹具、超时、重试耗尽、结构化解析失败、日志脱敏、禁止重试写路径）。`tests/test_scene_plan.py` 检查 Scene Plan 作业。`tests/test_scene_draft.py` 检查 Scene Draft 作业（修订不可变、幂等、失败、取消、审计脱敏）。`tests/test_candidate_change.py` 与 `tests/test_candidate_approval.py` 检查抽取与人类批准 / 提交。`tests/test_summaries.py` 检查 Scene / Chapter 摘要（须基于草稿、章级汇总、修订不可变、不写 Canon、无整章生成入口）。`tests/test_validation_run.py` 检查 Validation Run（Passed → AwaitingVerdict、RuleFailed 阻断、ExecFailed、非 Extracted 拒绝、不写 Canon）。`tests/test_repair_task.py` 检查 Repair Task（仅 RuleFailed 可开立、完成后强制再校验、RecheckPassed 不批准、再校验失败阻断批准、取消不删除）。`tests/test_context_pack.py` 检查 Context Pack 组装（Generate / Validate、缺卡 / 规格 / 快照拒绝、不写 Canon、无章级包、冻结后不可变）。`tests/test_outline_revision.py` 检查 Outline Revision（拟定 / 提交确认 / 确认可用、确认不是 Canon 批准、已确认禁止就地改、无章级生成、失败 / 取消不删除）。`tests/test_narrative_evals.py` 检查节点 9.1 评测集（九类可加载、确定性规则命中期望、runner JSON / 指标、不写 Canon / 不批准）。不启动 Docker，不调用真实模型，无网络。同一命令会收集 `contracts/` 下已批准 Schema 的校验测试。
+`tests/test_healthz.py` 用 FastAPI `TestClient` 在进程内检查 `/healthz`（以及 `/version`）。`tests/test_request_id.py` 检查 `X-Request-ID` 与 JSON 请求日志字段。`tests/test_audit.py` 检查审计写入与脱敏。`tests/test_story_project_spec.py` 检查 Story Project / Spec（schema 422、未批准不得当作已批准、已批准禁止 PATCH）。`tests/test_canon.py` 检查 Canon 实体 / 证据 / 事实（NotInCanon 创建、仅人工主编批准或废弃、故事时间查询、supersede 只追加）。`tests/test_canon_snapshot.py` 检查 Snapshot 创建 / 冻结 / 查询 / diff / 回放（后期新事实不得泄漏、仅人类冻结、稳定排序）。`tests/test_scene_card.py` 检查 Scene Card / 顺序 / 依赖（schema 422、依赖阻断可生成、环依赖、故事顺序冲突、仅人类批准）。`tests/test_llm_gateway.py` 检查 LLM Gateway（Fake 夹具、超时、重试耗尽、结构化解析失败、日志脱敏、禁止重试写路径）。`tests/test_scene_plan.py` 检查 Scene Plan 作业。`tests/test_scene_draft.py` 检查 Scene Draft 作业（修订不可变、幂等、失败、取消、审计脱敏）。`tests/test_candidate_change.py` 与 `tests/test_candidate_approval.py` 检查抽取与人类批准 / 提交。`tests/test_summaries.py` 检查 Scene / Chapter 摘要（须基于草稿、章级汇总、修订不可变、不写 Canon、无整章生成入口）。`tests/test_validation_run.py` 检查 Validation Run（Passed → AwaitingVerdict、RuleFailed 阻断、ExecFailed、非 Extracted 拒绝、不写 Canon）。`tests/test_repair_task.py` 检查 Repair Task（仅 RuleFailed 可开立、完成后强制再校验、RecheckPassed 不批准、再校验失败阻断批准、取消不删除）。`tests/test_context_pack.py` 检查 Context Pack 组装（Generate / Validate、缺卡 / 规格 / 快照拒绝、不写 Canon、无章级包、冻结后不可变）。`tests/test_outline_revision.py` 检查 Outline Revision（拟定 / 提交确认 / 确认可用、确认不是 Canon 批准、已确认禁止就地改、无章级生成、失败 / 取消不删除）。`tests/test_narrative_evals.py` 检查节点 9.1 评测集（九类可加载、确定性规则命中期望、runner JSON / 指标、不写 Canon / 不批准）。`tests/test_experiments.py` 检查节点 9.2 实验运行（创建、替换配置、基线六项指标对比、CSV/JSON 导出、历史不可变、不写 Canon / 不批准）。不启动 Docker，不调用真实模型，无网络。同一命令会收集 `contracts/` 下已批准 Schema 的校验测试。
 
 结束实现前按 `AGENTS.md`：格式化、类型检查、测试。
 

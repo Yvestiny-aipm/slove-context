@@ -1,0 +1,11 @@
+{
+  "text": "NOT_JSON_EXPERIMENT{{{",
+  "prompt_version": "eval-experiment.invalid",
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 4,
+    "total_tokens": 20,
+    "cost_amount": 0.01,
+    "cost_currency": "USD"
+  }
+}
