@@ -13,6 +13,8 @@ reuse this writer.
 Generating a Scene Plan or Scene Draft, extracting Candidate Changes,
 or writing a Scene / Chapter summary is not Canon approval. Approving a
 Candidate Change is not a Canon write; only human submit writes Canon.
+Confirming an Outline Revision is not Canon approval and does not write
+Canon.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
