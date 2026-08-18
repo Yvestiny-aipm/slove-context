@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 6.1：Context Pack 组装器（确定性规则；对照已批准 Scene Card / 已写定 Story Spec / 冻结 Canon Snapshot）。不要启动节点 6.2（不要实现 Outline）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要抽取候选。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 6.2：Outline Revision（仅 Fake / 内存仓库）。不要启动节点 7.x。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Outline 或生成器。节点 6.1 只做 Context Pack 组装。包不是 Canon。冻结不是批准，不写 Canon。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用或生成器。节点 6.2 只做 Outline Revision。确认可用不是批准，不写 Canon。大纲不是生成单位。
 
 ## 已冻结、默认不可改
 
@@ -391,3 +391,28 @@ cd backend && alembic upgrade head
 - 3.4 Scene Draft 仍接受静态夹具 `context_pack_id`，也接受组装器产出的已冻结包。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–5.2 API。
 - **不是** 节点 6.2 的 Outline、自动批准、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 6.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装，以及 Outline Revision（拟定 / 提交确认 / 确认可用、确认不是 Canon 批准、已确认禁止就地改、无章级生成、失败 / 取消不删除）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `outline_revisions`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack 表，不建章级生成 / 真实模型网关表。
+
+## 节点 6.2 边界
+
+- 输入：唯一故事项目上的大纲修订；层次为 Story → Arc/Volume → Chapter → Scene。场景节点引用已有 3.1 Scene，不重建 Scene Card，不启动生成作业。
+- 状态与 0.3 对齐：Drafting / Proposed / Confirmed / Revising / Failed / Cancelled / Rework / Superseded。
+- 仅人工主编可将 Proposed → Confirmed（`X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent 不可确认可用。
+- 确认可用不是 Approval，不写 Canon。大纲不是生成单位。无「生成一整章」或全书级生成入口。
+- 已确认版本不得就地 PATCH；结构改动必须出新 Revision / 新 id（Revising → Proposed → Confirmed）。旧 Confirmed 可变为 Superseded。
+- 节点字段至少含 goal、conflict、turning_point、start_state、end_state、constraints。
+- 失败 / 取消保留记录，不删除。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
+- 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–6.1 API。
+- **不是** 节点 7.x、自动批准、向量检索、真实模型供应商客户端、章级或全书级生成。
