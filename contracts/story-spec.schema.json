@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slove-context.local/contracts/story-spec.schema.json",
+  "title": "Story Spec / 故事规格",
+  "description": "人类主编写定的故事规格（节点 0.2）。约束这部小说要写什么、不能写什么。规格是编辑约束，不是 Canon。修订只能由主编改写，不因散文自动改写。MVP 仅一个故事项目、仅中文。无自动批准；本对象不能写 Canon。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "project_id",
+    "created_at",
+    "created_by",
+    "title",
+    "language",
+    "status",
+    "must_write",
+    "must_not_write"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "#/$defs/schema_version" },
+    "id": { "$ref": "#/$defs/uuid" },
+    "project_id": { "$ref": "#/$defs/project_id" },
+    "created_at": { "$ref": "#/$defs/iso8601_utc" },
+    "created_by": { "$ref": "#/$defs/human_editor" },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本故事项目的规格标题。"
+    },
+    "language": { "$ref": "#/$defs/language" },
+    "status": { "$ref": "#/$defs/story_spec_status" },
+    "must_write": {
+      "type": "array",
+      "description": "必须写到的约束（要写什么）。",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "must_not_write": {
+      "type": "array",
+      "description": "禁止写到的约束（不能写什么）。",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "notes": {
+      "type": "string",
+      "description": "主编备注。不进入 Canon。"
+    }
+  },
+  "$defs": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本契约的版本字符串（节点 0.4）。"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID 字符串。"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "唯一故事项目的标识。MVP 只有一个小说项目；本字段不是多项目数组，多项目不是 MVP 正常行为。"
+    },
+    "iso8601_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "ISO 8601 UTC 时间戳，必须以 Z 结尾。"
+    },
+    "human_editor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工主编（人类编辑者）的 id 或姓名。不是系统批准者，不是模型、实现 bot、验收 bot 或 Agent。"
+    },
+    "language": {
+      "type": "string",
+      "description": "产品语言。MVP 仅中文，不得出现第二语言开关。",
+      "enum": ["zh-CN", "中文"]
+    },
+    "story_spec_status": {
+      "type": "string",
+      "description": "故事规格生命周期（0.2）：草稿 → 主编写定 → 生效约束。",
+      "oneOf": [
+        { "const": "Draft", "description": "草稿：规格尚未由主编写定。" },
+        { "const": "Written", "description": "主编写定：主编已写定规格文本。" },
+        { "const": "Effective", "description": "生效约束：规格作为生成与校验的有效约束。" }
+      ]
+    }
+  }
+}

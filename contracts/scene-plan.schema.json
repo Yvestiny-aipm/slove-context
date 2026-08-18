@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slove-context.local/contracts/scene-plan.schema.json",
+  "title": "Scene Plan / 场景计划",
+  "description": "单个场景的节拍与意图安排（节点 0.2）。说明该场要发生什么；本身不是已批准真相。计划与 Canon 冲突时，Canon 胜。场景计划只管一个场景，不是大纲，不是生成单位。无自动批准；本对象不能写 Canon。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "project_id",
+    "created_at",
+    "created_by",
+    "scene_id",
+    "status",
+    "intent",
+    "beats"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "#/$defs/schema_version" },
+    "id": { "$ref": "#/$defs/uuid" },
+    "project_id": { "$ref": "#/$defs/project_id" },
+    "created_at": { "$ref": "#/$defs/iso8601_utc" },
+    "created_by": { "$ref": "#/$defs/human_editor" },
+    "scene_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "本计划绑定的唯一场景。场景计划是 per-scene。"
+    },
+    "status": { "$ref": "#/$defs/scene_plan_status" },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本场意图。计划是意图，不是 Scene Draft 散文，也不是 Canon。"
+    },
+    "beats": {
+      "type": "array",
+      "description": "本场节拍顺序。只约束这一场节奏。",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/beat" }
+    }
+  },
+  "$defs": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本契约的版本字符串（节点 0.4）。"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID 字符串。"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "唯一故事项目的标识。MVP 只有一个小说项目；本字段不是多项目数组，多项目不是 MVP 正常行为。"
+    },
+    "iso8601_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "ISO 8601 UTC 时间戳，必须以 Z 结尾。"
+    },
+    "human_editor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工主编（人类编辑者）的 id 或姓名。不是系统批准者，不是模型、实现 bot、验收 bot 或 Agent。"
+    },
+    "scene_plan_status": {
+      "type": "string",
+      "description": "场景计划生命周期（0.2）：拟定 → 供写卡或生成参照 → 可废弃或改写。",
+      "oneOf": [
+        { "const": "Drafted", "description": "拟定：计划已写出，尚未作为参照。" },
+        { "const": "InReference", "description": "参照中：供写卡或生成参照。" },
+        { "const": "Abandoned", "description": "已废弃：本计划不再使用。不改 Canon。" },
+        { "const": "Rewritten", "description": "已改写：已被新计划替换。不改 Canon。" }
+      ]
+    },
+    "beat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "description"],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "节拍序号，从 1 起。"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "该节拍要发生什么。"
+        }
+      }
+    }
+  }
+}
