@@ -403,6 +403,7 @@ def test_timeout_retry_and_dead_letter() -> None:
         max_attempts=2,
     )
     clock = _Clock()
+    clock.now = datetime.now(UTC)
     calls = {"n": 0}
 
     def fail(_job: object, _inputs: dict) -> dict:
