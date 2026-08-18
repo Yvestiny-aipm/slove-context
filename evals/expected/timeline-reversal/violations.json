@@ -1,0 +1,16 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "canon-active-conflict",
+      "severity": "Blocking",
+      "entity_ids": [
+        "林晚",
+        "前日黎明"
+      ],
+      "source_evidence": "她记得自己在前日黎明就已站在河滩",
+      "canon_evidence": "林晚 present_at_time 第一日黄昏",
+      "recommended_action": "HumanReject"
+    }
+  ]
+}

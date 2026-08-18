@@ -1,0 +1,16 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "canon-active-conflict",
+      "severity": "Blocking",
+      "entity_ids": [
+        "林晚",
+        "残玉能开门"
+      ],
+      "source_evidence": "林晚已知道残玉能开门",
+      "canon_evidence": "林晚 knows 不知残玉能开门",
+      "recommended_action": "HumanReject"
+    }
+  ]
+}

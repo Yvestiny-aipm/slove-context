@@ -1,0 +1,16 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "canon-active-conflict",
+      "severity": "Blocking",
+      "entity_ids": [
+        "林晚",
+        "完好无损"
+      ],
+      "source_evidence": "林晚抬手时腕骨完好无损",
+      "canon_evidence": "林晚 injury_status 左腕骨折",
+      "recommended_action": "HumanReject"
+    }
+  ]
+}

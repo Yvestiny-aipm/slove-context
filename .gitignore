@@ -24,6 +24,7 @@ data/**
 !data/.gitkeep
 model-outputs/
 *.gguf
+evals/out/
 
 # OS / editor
 .DS_Store

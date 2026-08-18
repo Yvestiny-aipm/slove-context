@@ -1,0 +1,15 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "eval.lost-foreshadowing",
+      "severity": "Blocking",
+      "entity_ids": [
+        "残玉"
+      ],
+      "source_evidence": "林晚只顾把衣襟拉紧，河滩上什么也没留意，便转身回镇。",
+      "canon_evidence": "Story Spec must_write: 伏笔：河滩残玉须留微光",
+      "recommended_action": "Regenerate"
+    }
+  ]
+}

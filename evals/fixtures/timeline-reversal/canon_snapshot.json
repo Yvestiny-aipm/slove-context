@@ -1,0 +1,36 @@
+{
+  "eval_kind": "canon_snapshot",
+  "schema_version": "eval-9.1.0",
+  "id": "91a10001-0009-4000-8000-000000000001",
+  "project_id": "11111111-1111-4111-8111-111111111111",
+  "created_at": "2026-08-18T03:00:00Z",
+  "created_by": "主编",
+  "status": "frozen",
+  "as_of_scene_seq": 2,
+  "as_of_story_time": "第一日黄昏",
+  "entities": [
+    {
+      "id": "91a10001-0007-4000-8000-000000000001",
+      "entity_type": "character",
+      "name": "林晚",
+      "created_at": "2026-08-18T03:00:00Z",
+      "created_by": "主编"
+    }
+  ],
+  "facts": [
+    {
+      "id": "91a10001-0008-4000-8000-000000000001",
+      "entity_id": "91a10001-0007-4000-8000-000000000001",
+      "predicate": "present_at_time",
+      "value_json": {
+        "value": "第一日黄昏"
+      },
+      "effective_story_time": "第一日黄昏",
+      "valid_from_scene_id": "91a10001-0002-4000-8000-000000000001",
+      "status": "Active",
+      "source_type": "editor",
+      "evidence_id": "91a10001-0008-4000-8000-000000000001",
+      "current_version_id": "91a10001-0008-4000-8000-000000000001"
+    }
+  ]
+}

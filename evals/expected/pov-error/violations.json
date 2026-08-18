@@ -1,0 +1,16 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "spec-must-not-write",
+      "severity": "Blocking",
+      "entity_ids": [
+        "顾衡",
+        "第二主角视角"
+      ],
+      "source_evidence": "顾衡用第二主角视角看着河滩上的林晚",
+      "canon_evidence": "Story Spec must_not_write: 禁止第二主角视角",
+      "recommended_action": "Regenerate"
+    }
+  ]
+}

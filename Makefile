@@ -12,7 +12,8 @@ install:
 # human approve / submit + scene / chapter summaries + validation run +
 # repair task + context pack + outline revision + style guide / sample +
 # style validation + review queue + local job queue / Worker +
-# Agent registry / permissions + single-scene DAG + batch schedule)
+# Agent registry / permissions + single-scene DAG + batch schedule +
+# node 9.1 narrative consistency evals)
 # and contracts/ (0.4). No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts

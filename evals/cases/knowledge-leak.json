@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "knowledge-leak",
+  "title": "角色知识泄露",
+  "difficulty": "medium",
+  "rule_category": "knowledge_leak",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "Canon 与场景知情边界都写明林晚不知残玉能开门。候选主张她已知，属于角色知识泄露。人类主编应拒绝，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/knowledge-leak/story_spec.json",
+    "canon_snapshot": "evals/fixtures/knowledge-leak/canon_snapshot.json",
+    "scene_card": "evals/fixtures/knowledge-leak/scene_card.json",
+    "context_pack": "evals/fixtures/knowledge-leak/context_pack.json",
+    "draft": "evals/fixtures/knowledge-leak/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/knowledge-leak/candidate_changes.json",
+    "violations": "evals/expected/knowledge-leak/violations.json"
+  }
+}

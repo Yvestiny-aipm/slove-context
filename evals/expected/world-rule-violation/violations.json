@@ -1,0 +1,16 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "spec-must-not-write",
+      "severity": "Blocking",
+      "entity_ids": [
+        "林晚",
+        "御空术"
+      ],
+      "source_evidence": "林晚当夜凡人施展御空术掠过河面",
+      "canon_evidence": "Story Spec must_not_write: 禁止凡人施展御空术",
+      "recommended_action": "Regenerate"
+    }
+  ]
+}

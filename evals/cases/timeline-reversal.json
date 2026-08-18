@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "timeline-reversal",
+  "title": "时间倒流",
+  "difficulty": "easy",
+  "rule_category": "timeline_reversal",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "Canon 已固定林晚在第一日黄昏在场。候选把在场时间改到前日黎明，属于时间倒流。人类主编应拒绝该候选，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/timeline-reversal/story_spec.json",
+    "canon_snapshot": "evals/fixtures/timeline-reversal/canon_snapshot.json",
+    "scene_card": "evals/fixtures/timeline-reversal/scene_card.json",
+    "context_pack": "evals/fixtures/timeline-reversal/context_pack.json",
+    "draft": "evals/fixtures/timeline-reversal/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/timeline-reversal/candidate_changes.json",
+    "violations": "evals/expected/timeline-reversal/violations.json"
+  }
+}
