@@ -1,0 +1,14 @@
+[project]
+name = "slove-context"
+version = "0.0.0"
+description = "Local monolith skeleton (node 1.1). No business logic."
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["slove_context*"]

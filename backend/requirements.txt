@@ -1,0 +1,2 @@
+# Node 1.1 skeleton. No runtime web or database dependencies.
+# Do not add FastAPI, database drivers, or model clients in this node.
