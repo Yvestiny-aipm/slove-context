@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from slove_context.agents.permissions import PermissionDenied, PermissionGuard
 from slove_context.audit import AuditWriter
 from slove_context.candidate_change.approval_service import ApprovalService
 from slove_context.candidate_change.models import (
@@ -257,6 +258,11 @@ class ReviewQueueService:
             )
         reason_code = _require_reason_code(body)
         comment = _optional_str(body.get("comment"))
+        if action == ACTION_APPROVE and item.subject_type == SUBJECT_CANDIDATE_CHANGE:
+            try:
+                PermissionGuard().assert_actor_may_approve_canon(editor)
+            except PermissionDenied as exc:
+                raise ReviewQueueServiceError(exc.status_code, exc.detail) from exc
         if action == ACTION_APPROVE:
             self._apply_subject_approve(item, editor, body)
         elif action == ACTION_REJECT:

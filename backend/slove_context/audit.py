@@ -25,6 +25,9 @@ Style Report is not Canon approval.
 Job queue / Worker (8.1) writes enqueue / cancel / rerun / dispatch
 transitions only. The Worker does not approve Candidate Changes and
 does not submit Canon.
+Agent Registry / Agent Run (8.2) writes create / start / succeed /
+fail / cancel only. No Agent writes Canon. Human Approver approve
+is not submit.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
