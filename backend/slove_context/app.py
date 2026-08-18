@@ -55,7 +55,12 @@ Canon-approve actor.
 Node 8.3: single-scene DAG orchestrator. Fixed nodes dispatch
 through the 8.1 Worker. human_review / canon_commit wait.
 canon_commit calls existing 4.2 submit only after a human 主编
-approve. No 8.4 batch.
+approve.
+Node 8.4: batch project/chapter scheduler. Multi-project ticks
+go through 8.3 DAG + 8.1 Worker + 8.2 PermissionGuard. Same-
+project enqueue requires approved dependencies. Pause + human
+alert on budget or consecutive failures. dry-run does not call
+the model. No auto Canon approve. No 9.x.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -132,6 +137,11 @@ from slove_context.scene_plan.repository import (
     ScenePlanRepository,
 )
 from slove_context.scene_plan.routes import router as scene_plan_router
+from slove_context.scheduler.repository import (
+    InMemoryScheduleRepository,
+    ScheduleRepository,
+)
+from slove_context.scheduler.routes import router as scheduler_router
 from slove_context.story.repository import InMemoryStoryRepository, StoryRepository
 from slove_context.story.routes import router as story_router
 from slove_context.style.repository import InMemoryStyleRepository, StyleRepository
@@ -181,6 +191,7 @@ def create_app(
     job_repository: JobRepository | None = None,
     agent_repository: AgentRepository | None = None,
     dag_repository: DagRepository | None = None,
+    schedule_repository: ScheduleRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -244,6 +255,9 @@ def create_app(
         agent_repository or InMemoryAgentRunRepository()
     )
     application.state.dag_repository = dag_repository or InMemoryDagRepository()
+    application.state.schedule_repository = (
+        schedule_repository or InMemoryScheduleRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -291,6 +305,7 @@ def create_app(
     application.include_router(jobs_router)
     application.include_router(agents_router)
     application.include_router(dags_router)
+    application.include_router(scheduler_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

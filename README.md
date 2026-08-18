@@ -14,9 +14,9 @@ slove context
 | `AGENTS.md` | 实现约定（八条规则）与常用命令示例 |
 | `docs/` | 已冻结范围 / 术语 / 状态机，骨架边界 `architecture.md`，以及 `audit.md` |
 | `contracts/` | 已批准 JSON Schema（节点 0.4） |
-| `backend/` | FastAPI 应用（`/healthz`、`/version`、request_id、JSON 日志、审计写入、Story Project / Spec、最小 Canon API、Canon Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取 / 批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装器、Outline Revision） |
-| `backend/alembic/` | 可审阅的 `audit_events`、Story Project / Spec、Canon 表、snapshot 列、Scene / Scene Plan / Scene Draft / extract / summary / validation / repair / context_packs / outline_revisions 表迁移（单元测试不连库） |
-| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft、Candidate Change、摘要、Validation Run、Repair Task、Context Pack、Outline Revision 的进程内测试；`make test` 也会跑 contracts 测试 |
+| `backend/` | FastAPI 应用（`/healthz`、`/version`、2.1–8.4 API：含单场景 DAG 与批量调度；无真实模型客户端） |
+| `backend/alembic/` | 可审阅迁移至 `021_schedule`（单元测试不连库） |
+| `tests/` | 进程内测试（含 8.4 批量调度）；`make test` 也会跑 contracts 测试 |
 | `scripts/` | 脚本目录占位 |
 | `data/` | 本地数据占位（不提交密钥或模型输出） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） |
