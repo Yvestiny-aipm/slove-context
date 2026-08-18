@@ -1,12 +1,13 @@
 [project]
 name = "slove-context"
 version = "0.0.0"
-description = "Local monolith (node 1.3). Health/version plus audit and JSON logs."
+description = "Local monolith (node 2.1). Health/version, audit logs, Story Project / Spec APIs."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "httpx>=0.27.0",
+    "jsonschema>=4.18.0",
 ]
 
 [build-system]
