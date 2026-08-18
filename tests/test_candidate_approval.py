@@ -27,7 +27,7 @@ from slove_context.scene_plan.repository import InMemoryScenePlanRepository
 from slove_context.story.repository import InMemoryStoryRepository
 
 ROOT = Path(__file__).resolve().parents[1]
-HUMAN = {"X-Actor-Type": "human_editor", "X-Actor-Id": "主编"}
+HUMAN = {"X-Actor-Type": "human_editor", "X-Actor-Id": "editor-1"}
 GENERATE = {"X-Actor-Type": "generation_agent", "X-Actor-Id": "gen-1"}
 SYSTEM = {"X-Actor-Type": "system", "X-Actor-Id": "sys-1"}
 REVIEW = {"X-Actor-Type": "review_agent", "X-Actor-Id": "rev-1"}
@@ -234,7 +234,10 @@ def test_approve_does_not_write_canon() -> None:
     response = client.post(
         _approve_url(project["id"], candidate["id"]),
         headers=HUMAN,
-        json={"reason": "与已写定规格不冲突；仍须主编另一次提交才会改 Canon。"},
+        json={
+            "created_by": "主编",
+            "reason": "与已写定规格不冲突；仍须主编另一次提交才会改 Canon。",
+        },
     )
     assert response.status_code == 200, response.text
     body = response.json()
@@ -508,7 +511,7 @@ def test_reject_does_not_write_canon_and_keeps_record() -> None:
     rejected = client.post(
         _reject_url(project["id"], candidate["id"]),
         headers=HUMAN,
-        json={"reason": "与已有 Canon 冲突，Canon 胜。"},
+        json={"created_by": "主编", "reason": "与已有 Canon 冲突，Canon 胜。"},
     )
     assert rejected.status_code == 200, rejected.text
     body = rejected.json()
