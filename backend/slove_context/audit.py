@@ -4,8 +4,9 @@ Persists structured audit rows through an AuditSink. The FastAPI app does
 not open a database connection in this node; unit tests use InMemoryAuditSink.
 
 Node 2.1 Story Project / Story Spec writes, node 2.2 Canon writes,
-node 2.3 Canon Snapshot create / freeze, and node 3.1 Scene Card
-create / draft edit / approve / dependencies reuse this writer.
+node 2.3 Canon Snapshot create / freeze, node 3.1 Scene Card
+create / draft edit / approve / dependencies, and node 3.3 Scene Plan
+jobs reuse this writer. Generating a Scene Plan is not Canon approval.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """

@@ -5,5 +5,6 @@ a scene. Approving a Scene Card is not Canon approval and does not write
 Canon. Generatable is a derived flag: approved (or published) card and
 all dependency scenes approved or published.
 
-No Scene Plan, Scene Draft, model gateway, or LLM.
+Scene Plan jobs (node 3.3) consume the derived generatable flag.
+Scene Draft generation is node 3.4 and is not implemented here.
 """

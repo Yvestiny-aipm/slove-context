@@ -3,8 +3,8 @@
 Writes go through AuditWriter. Approving a Scene Card never writes Canon.
 Only the human 主编 can approve. Generatable is derived: approved or
 published card, and every dependency scene is approved or published.
-Cycles and in-story-order conflicts are rejected. No Scene Plan, Scene
-Draft, model gateway, or LLM.
+Cycles and in-story-order conflicts are rejected. This module does not
+generate Scene Plan or Scene Draft; node 3.3 consumes is_generatable.
 """
 
 from __future__ import annotations
@@ -207,6 +207,16 @@ class SceneService:
             self._dependency_satisfies(dep_id, project_id=scene.project_id)
             for dep_id in scene.depends_on
         )
+
+    def unsatisfied_dependencies(self, scene: Scene) -> list[str]:
+        """Scene ids that block generatable (node 3.1 derived flag)."""
+        if scene.status not in DEPENDENCY_SATISFYING_STATUSES:
+            return list(scene.depends_on)
+        return [
+            dep_id
+            for dep_id in scene.depends_on
+            if not self._dependency_satisfies(dep_id, project_id=scene.project_id)
+        ]
 
     def patch_scene(
         self,

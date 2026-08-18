@@ -1,0 +1,11 @@
+{
+  "text": "{\"intent\":\"林晚在河滩发现并拾起残玉，不解释来历。\",\"beats\":[{\"order\":1,\"description\":\"先冷\"},{\"order\":2,\"description\":\"后见光\"},{\"order\":3,\"description\":\"再拾玉\"}]}",
+  "prompt_version": "scene_plan.v1",
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 24,
+    "total_tokens": 40,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

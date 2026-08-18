@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 3.2：可替换 LLM Gateway 抽象与 Fake Provider。不要启动节点 3.3（不要做 Scene Plan 生成作业）。不要实现具体生成 Prompt。不要调用任何外部模型 API。不要实现 Context Pack 或生成器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 3.3：Scene Plan 生成作业（仅 Fake Provider）。不要启动节点 3.4（不要生成 Scene Draft）。不要调用任何真实模型 API。不要实现 Context Pack 或生成器。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Scene Plan / Scene Draft 生成作业、Context Pack 或生成器。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Scene Draft 生成、Context Pack 或生成器。
 
 ## 已冻结、默认不可改
 
@@ -188,3 +188,27 @@ cd backend && alembic upgrade head
 - 网关不写 Canon，不自动批准，不生成 Scene Plan / Scene Draft。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–2.3 API、节点 3.1 Scene Card API。
 - **不是** 节点 3.3 的 Scene Plan 生成作业、具体生成 Prompt、Context Pack、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 3.3）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway，以及 Scene Plan 生成作业（Fake Provider：成功、非法 JSON、依赖未齐、schema 失败且至多一次 format repair）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `scene_plan_jobs`、`scene_plans`。不重建 Canon / 项目 / Scene Card 表，不建 Scene Draft / Context Pack / 真实模型网关表。
+
+## 节点 3.3 边界
+
+- 输入：已批准且可生成的 Scene Card + 指定 Canon Snapshot。依赖未齐或未批准则拒绝。
+- 输出：对照 `contracts/scene-plan.schema.json` 的 Scene Plan。非法结构化输出不得作为有效计划落库。
+- Prompt 模板带版本号（`prompts/scene_plan.v1.md`）；要求 JSON；禁止散文 / 正文 / Scene Draft。
+- schema 失败至多一次 format repair；仍失败则 job failed 并保留证据（request refs、raw_response_reference、校验错误）。
+- API：触发作业、查询作业、读取当前 Scene Plan。写既有 `AuditWriter`，沿用 1.3 脱敏。
+- 仅 Fake Provider + 夹具。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- Scene Plan 不是 Canon，也不是 Scene Draft。作业不写 Canon。无自动批准。
+- 生成单位为单个场景。无「生成一整章」入口。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–3.2 API。
+- **不是** 节点 3.4 的 Scene Draft 生成、Context Pack、向量检索、真实模型供应商客户端。

@@ -30,6 +30,18 @@ STRUCTURED_INVALID_TASK_TYPES = frozenset(
     {"structured_invalid", "fixture_structured_invalid"}
 )
 
+# Node 3.3 Scene Plan fixtures. Placeholders, not product prose.
+SCENE_PLAN_FIXTURES = {
+    "scene_plan": "scene_plan_ok.json",
+    "scene_plan_ok": "scene_plan_ok.json",
+    "scene_plan_invalid_json": "scene_plan_invalid_json.json",
+    "scene_plan_invalid_schema": "scene_plan_invalid_schema.json",
+    "scene_plan_repair": "scene_plan_ok.json",
+    "scene_plan_repair_ok": "scene_plan_ok.json",
+    "scene_plan_repair_fail": "scene_plan_repair_fail.json",
+    "scene_plan_repair_invalid_schema": "scene_plan_repair_fail.json",
+}
+
 
 class FakeProvider(Provider):
     """Deterministic in-process provider. Safe to retry: no persist side effects."""
@@ -38,8 +50,10 @@ class FakeProvider(Provider):
 
     def __init__(self, fixtures_dir: Path | None = None) -> None:
         self._fixtures_dir = fixtures_dir or FIXTURES_DIR
+        self.calls = 0
 
     def generate_text(self, request: GenerateRequest) -> GenerateResponse:
+        self.calls += 1
         data = self._load(_text_fixture_name(request.task_type))
         return self._response(
             request,
@@ -49,6 +63,7 @@ class FakeProvider(Provider):
         )
 
     def generate_structured(self, request: GenerateRequest) -> GenerateResponse:
+        self.calls += 1
         data = self._load(_structured_fixture_name(request.task_type))
         raw_text = data["text"]
         try:
@@ -104,6 +119,8 @@ class FakeProvider(Provider):
 
 
 def _text_fixture_name(task_type: str) -> str:
+    if task_type in SCENE_PLAN_FIXTURES:
+        return SCENE_PLAN_FIXTURES[task_type]
     if task_type in STRUCTURED_INVALID_TASK_TYPES:
         return "structured_invalid.json"
     if task_type in STRUCTURED_OK_TASK_TYPES:
@@ -112,6 +129,8 @@ def _text_fixture_name(task_type: str) -> str:
 
 
 def _structured_fixture_name(task_type: str) -> str:
+    if task_type in SCENE_PLAN_FIXTURES:
+        return SCENE_PLAN_FIXTURES[task_type]
     if task_type in STRUCTURED_INVALID_TASK_TYPES:
         return "structured_invalid.json"
     return "structured_ok.json"

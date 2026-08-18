@@ -10,7 +10,8 @@ or side-effect operation (persist, commit, approve, Canon write, save draft)
 must use invoke_once, which runs exactly once. If audit+state has already
 been written, do not retry that write.
 
-v1 wraps FakeProvider only. No live vendor HTTP. No Scene Plan job.
+v1 wraps FakeProvider only. No live vendor HTTP. Scene Plan jobs (3.3)
+call generate_structured; persist uses invoke_once. No Scene Draft (3.4).
 """
 
 from __future__ import annotations
