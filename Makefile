@@ -18,6 +18,6 @@ lint:
 	$(PYTHON) -m ruff check backend tests
 
 typecheck:
-	$(PYTHON) -m mypy --explicit-package-bases backend/slove_context
+	cd backend && $(PYTHON) -m mypy slove_context
 
 check: format lint typecheck test

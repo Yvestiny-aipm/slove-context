@@ -1,7 +1,6 @@
 """In-process /healthz and /version. No Docker, no model calls."""
 
 from fastapi.testclient import TestClient
-
 from slove_context.app import app
 
 client = TestClient(app)
