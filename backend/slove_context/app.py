@@ -35,14 +35,21 @@ Node 7.2: Style Validation v1 (deterministic checks + Fake Provider
 LLM check against an approved Style Guide). Findings default to
 warning / info and do not block Canon submit. Not a 5.x Validation
 Run. 3.4 generate job is unchanged.
+Node 7.3: human review-queue API. Enqueue existing Scene Plan / Scene
+Draft / Candidate Change / Validation Report / Repair Task / Style
+Report subjects. Only a human 主编 may approve / reject /
+request_revision / escalate, each with a reason_code. Candidate
+approve reuses 4.2 (verdict only, not submit). Style-report approve
+is not Canon approval and does not block Canon submit.
 
-No auth, queues, or live model clients. Spec / Scene Card approval is not
-Canon approval. Scene Plan, Scene Draft, Candidate Change, summaries,
-Validation Runs, Repair Tasks, Context Packs, Outline Revisions,
-Style Guide / Sample approvals, and Style Validation reports are not
-Canon. Scene Draft jobs still accept the 3.4 static fixture id or a
-frozen assembler pack. There is no chapter-level or book-level generate
-entrance and no chapter-level Context Pack. No review queue (7.3).
+No auth, live model clients, or 8.x workers. Spec / Scene Card
+approval is not Canon approval. Scene Plan, Scene Draft, Candidate
+Change, summaries, Validation Runs, Repair Tasks, Context Packs,
+Outline Revisions, Style Guide / Sample approvals, Style Validation
+reports, and review-queue decisions are not Canon writes. Scene Draft
+jobs still accept the 3.4 static fixture id or a frozen assembler
+pack. There is no chapter-level or book-level generate entrance and
+no chapter-level Context Pack. No production seed-status route.
 Built-in /openapi.json is kept.
 """
 
@@ -80,6 +87,11 @@ from slove_context.repair.repository import (
     RepairRepository,
 )
 from slove_context.repair.routes import router as repair_router
+from slove_context.review_queue.repository import (
+    InMemoryReviewQueueRepository,
+    ReviewQueueRepository,
+)
+from slove_context.review_queue.routes import router as review_queue_router
 from slove_context.scene.repository import InMemorySceneRepository, SceneRepository
 from slove_context.scene.routes import router as scene_router
 from slove_context.scene_draft.models import DEFAULT_TASK_TYPE as DRAFT_TASK_TYPE
@@ -139,6 +151,7 @@ def create_app(
     outline_repository: OutlineRepository | None = None,
     style_repository: StyleRepository | None = None,
     style_validation_repository: StyleValidationRepository | None = None,
+    review_queue_repository: ReviewQueueRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -190,6 +203,9 @@ def create_app(
     application.state.style_validation_repository = (
         style_validation_repository or InMemoryStyleValidationRepository()
     )
+    application.state.review_queue_repository = (
+        review_queue_repository or InMemoryReviewQueueRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -222,6 +238,7 @@ def create_app(
     application.include_router(outline_router)
     application.include_router(style_router)
     application.include_router(style_validation_router)
+    application.include_router(review_queue_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

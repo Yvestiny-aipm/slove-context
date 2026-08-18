@@ -1,7 +1,7 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 7.2：Style Validation v1（仅 Fake / 内存仓库）。不要启动节点 7.3（不要实现审校队列）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要抽取候选。风格发现默认不阻断 Canon 提交。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。
+一次只实现一个已冻结节点。当前节点是 7.3：人类审校队列（仅 Fake / 内存仓库）。不要启动节点 8.x（不要实现编排 / worker / Agent 注册表）。不要启动节点 9.x。不要批准或提交 Canon（审校队列 approve 候选变更只复用 4.2 裁决，不 submit）。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要抽取候选。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格报告批准不是 Canon 批准，默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
 不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用或生成器。节点 7.2 只做 Style Validation v1。批准风格资产不是 Canon 批准，不写 Canon。风格校验不是 5.x Validation Run。
@@ -467,3 +467,28 @@ cd backend && alembic upgrade head
 - 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–7.1 API。
 - **不是** 节点 7.3 审校队列、自动批准、向量检索、真实模型供应商客户端、把风格发现默认写成 Canon 阻断。
+
+## 命令示例（节点 7.3）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation，以及审校队列（六类对象入队、仅人工主编批准 / 拒绝 / 要求修订 / 升级且每步有 reason_code、非人类 403、按 blocker / 项目 / 章 / 状态筛选排序、导出 JSON review pack、批准不是静默 Canon 写入、失败 / 取消不删除、2.1–7.2 API 仍在）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `review_queue_items`、`review_decisions`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide / Style Validation 表，不建 8.x worker / Agent 注册表 / 真实模型网关表。
+
+## 节点 7.3 边界
+
+- 输入：已有 Scene Plan / Scene Draft / Candidate Change / Validation Report / Repair Task / Style Report，按 type+id 入队。
+- 裁决动作：approve / reject / request_revision / escalate。每步必须有 `reason_code`；文本 comment 可选。
+- 仅人工主编可裁决（`X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent 一律 403。
+- 队列项含 input versions、Context Pack 引用、evidence refs、diff、decision history；可按 blocker / 项目 / 章 / 任务状态筛选排序。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；正文 / 正例 / 反例 / sample / `text_evidence` 不得入审计。支持导出 JSON review pack。
+- 候选变更的审校队列 approve 复用 4.2 approve（AwaitingVerdict → Approved），**不 submit**。提交 Canon 仍走既有 `POST .../candidate-changes/{id}/submit`。
+- 批准 Style Report 不是 Canon 批准，默认不阻断 Canon 提交。
+- 失败 / 取消保留记录，不删除。无生产 seed-status HTTP 路由。不改 3.4 生成作业。不改 5.x 硬规则语义。
+- 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–7.2 API。
+- **不是** 节点 8.x 编排 / worker / Agent 注册表、节点 9.x、自动批准、向量检索、真实模型供应商客户端、无人类主编的 Canon 写入。
