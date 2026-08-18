@@ -1,12 +1,24 @@
-# Node 1.1 skeleton only.
-# postgres / backend are placeholders and are not started.
-# Runnable Postgres / FastAPI health checks are node 1.2 — do not implement here.
-# Do not `docker compose up` expecting a healthy stack in this node.
-#
-# services:
-#   postgres:
-#     # image, ports, volumes: node 1.2
-#   backend:
-#     # app and health: node 1.2
+# Node 1.2: startable local Postgres only.
+# No Canon tables, no backend service required this node.
+# Backend FastAPI is run on the host (see README). Do not add queues or model services.
 
-services: {}
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-slove}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-slove_context}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
