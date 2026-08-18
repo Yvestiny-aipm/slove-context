@@ -4,9 +4,10 @@ Node 1.2 routes: GET /healthz, GET /version (kept).
 Node 1.3: request_id + JSON request-complete logs.
 Node 2.1: Story Project / Story Spec persistence APIs.
 Node 2.2: minimal Canon entities / evidence / facts API.
+Node 2.3: Canon Snapshot create / freeze / query / diff / replay.
 
 No auth, queues, or model clients. Spec approval is not Canon approval.
-Snapshot freeze / replay is node 2.3 and is not implemented.
+No Scene Card, Context Pack, or generator.
 Built-in /openapi.json is kept.
 """
 

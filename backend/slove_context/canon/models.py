@@ -1,8 +1,9 @@
-"""In-process Canon records (node 2.2).
+"""In-process Canon records (node 2.2 + 2.3).
 
 Statuses match docs/state-machines.md §4 Canon Fact.
 Entity types are generic (角色 / 地点 / 物品 / 组织 / 规则); this is not
 a character or scene product. Evidence is not Canon.
+Snapshot is a read-only copy at a moment; it does not replace current Canon.
 """
 
 from __future__ import annotations
@@ -66,6 +67,11 @@ SOURCE_PROSE = "prose"
 SOURCE_EDITOR = "editor"
 
 SOURCE_TYPES = frozenset({SOURCE_PROSE, SOURCE_EDITOR})
+
+SNAPSHOT_UNFROZEN = "unfrozen"
+SNAPSHOT_FROZEN = "frozen"
+
+SNAPSHOT_STATUSES = frozenset({SNAPSHOT_UNFROZEN, SNAPSHOT_FROZEN})
 
 _SOURCE_ALIASES = {
     "prose": SOURCE_PROSE,
@@ -245,6 +251,47 @@ class CanonFact:
             "effective_story_time": self.effective_story_time,
             "supersedes_fact_id": self.supersedes_fact_id,
             "superseded_by_fact_id": self.superseded_by_fact_id,
+        }
+
+
+@dataclass
+class CanonSnapshot:
+    """Read-only copy of Active Canon at a moment. Does not replace live Canon."""
+
+    id: str
+    project_id: str
+    created_at: str
+    created_by: str
+    fact_ids: list[str]
+    status: str
+    as_of_scene_seq: int | None = None
+    as_of_story_time: str | None = None
+    frozen_at: str | None = None
+    note: str | None = None
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "created_at": self.created_at,
+            "created_by": self.created_by,
+            "fact_ids": list(self.fact_ids),
+            "status": self.status,
+            "as_of_scene_seq": self.as_of_scene_seq,
+            "as_of_story_time": self.as_of_story_time,
+            "frozen_at": self.frozen_at,
+            "note": self.note,
+        }
+
+    def to_audit_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "status": self.status,
+            "fact_ids": list(self.fact_ids),
+            "as_of_scene_seq": self.as_of_scene_seq,
+            "as_of_story_time": self.as_of_story_time,
+            "frozen_at": self.frozen_at,
         }
 
 

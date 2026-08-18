@@ -81,6 +81,35 @@ def require_value_json(value: Any) -> Any:
     )
 
 
+def require_optional_scene_seq(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise CanonValidationError(
+            "invalid_as_of_scene_seq",
+            "as_of_scene_seq must be an integer scene sequence number.",
+        )
+    if value < 1:
+        raise CanonValidationError(
+            "invalid_as_of_scene_seq",
+            "as_of_scene_seq must be a positive integer.",
+        )
+    return value
+
+
+def require_optional_story_time(
+    value: Any, field: str = "as_of_story_time"
+) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise CanonValidationError(
+            "invalid_as_of_story_time",
+            f"{field} must be a non-empty string when provided.",
+        )
+    return value.strip()
+
+
 def reject_create_as_active(status: Any) -> None:
     if status is None:
         return

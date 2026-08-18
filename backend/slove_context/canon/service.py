@@ -1,10 +1,14 @@
-"""Canon write path (node 2.2).
+"""Canon write path (node 2.2 + 2.3).
 
 Facts are append-only. Corrections supersede the old fact and create a
 new version. In-place edits of an Active fact body are forbidden.
 Create / approve / abandon write audit_events. Only the human 主编 may
 approve, abandon, or supersede. No auto-approval. Evidence is not Canon.
-Snapshot freeze / replay is node 2.3 and is not implemented here.
+
+Node 2.3: Canon Snapshot create / freeze / query / diff / replay.
+A snapshot is a read-only copy of Active facts at a moment; it does not
+replace current Canon. Looking at a snapshot cannot change live Canon.
+No Scene Card, Context Pack, generator, vector search, or LLM.
 """
 
 from __future__ import annotations
@@ -20,8 +24,11 @@ from slove_context.canon.models import (
     FACT_NOT_IN_CANON,
     FACT_SUPERSEDED,
     NOT_YET_ACTIVE,
+    SNAPSHOT_FROZEN,
+    SNAPSHOT_UNFROZEN,
     CanonFact,
     CanonFactVersion,
+    CanonSnapshot,
     Entity,
     EvidenceRecord,
 )
@@ -31,6 +38,8 @@ from slove_context.canon.validate import (
     reject_create_as_active,
     require_entity_type,
     require_nonempty_str,
+    require_optional_scene_seq,
+    require_optional_story_time,
     require_source_type,
     require_uuid,
     require_value_json,
@@ -379,6 +388,205 @@ class CanonService:
         )
         return {"old": old, "new": new_fact}
 
+    def create_snapshot(
+        self,
+        *,
+        project_id: str,
+        payload: dict[str, Any],
+        actor: Actor,
+    ) -> CanonSnapshot:
+        self._require_project(project_id)
+        try:
+            as_of_scene_seq = require_optional_scene_seq(payload.get("as_of_scene_seq"))
+            as_of_story_time = require_optional_story_time(
+                payload.get("as_of_story_time")
+            )
+            note = payload.get("note")
+            if note is not None:
+                note = require_nonempty_str(note, "note")
+        except CanonValidationError as exc:
+            raise CanonServiceError(
+                422, {"error": exc.error, "message": exc.message}
+            ) from exc
+        if as_of_scene_seq is None and as_of_story_time is None:
+            raise CanonServiceError(
+                422,
+                {
+                    "error": "as_of_required",
+                    "message": (
+                        "A snapshot requires as_of_scene_seq and/or as_of_story_time."
+                    ),
+                },
+            )
+        created_by_value = _require_created_by(payload.get("created_by"), actor)
+        visible = self._active_facts_as_of(
+            project_id,
+            as_of_story_time=as_of_story_time,
+        )
+        fact_ids = [fact.id for fact in _sort_facts(visible)]
+        snapshot = CanonSnapshot(
+            id=str(uuid4()),
+            project_id=project_id,
+            created_at=_utc_now_z(),
+            created_by=created_by_value,
+            fact_ids=fact_ids,
+            status=SNAPSHOT_UNFROZEN,
+            as_of_scene_seq=as_of_scene_seq,
+            as_of_story_time=as_of_story_time,
+            frozen_at=None,
+            note=note,
+        )
+        self._repo.add_snapshot(snapshot)
+        self._write_audit(
+            actor=actor,
+            action="canon_snapshot.create",
+            resource_type="canon_snapshot",
+            resource_id=snapshot.id,
+            before_json=None,
+            after_json=snapshot.to_audit_dict(),
+        )
+        return snapshot
+
+    def freeze_snapshot(
+        self, project_id: str, snapshot_id: str, actor: Actor
+    ) -> CanonSnapshot:
+        self._require_human(actor, action="freeze", resource="Canon Snapshot")
+        snapshot = self._get_snapshot(project_id, snapshot_id)
+        if snapshot.status == SNAPSHOT_FROZEN:
+            raise CanonServiceError(
+                409,
+                {
+                    "error": "snapshot_already_frozen",
+                    "message": (
+                        "This Canon Snapshot is already frozen. "
+                        "A frozen snapshot is read-only; its fact list "
+                        "cannot be mutated."
+                    ),
+                    "status": snapshot.status,
+                },
+            )
+        before = snapshot.to_audit_dict()
+        snapshot.status = SNAPSHOT_FROZEN
+        snapshot.frozen_at = _utc_now_z()
+        self._repo.save_snapshot(snapshot)
+        self._write_audit(
+            actor=actor,
+            action="canon_snapshot.freeze",
+            resource_type="canon_snapshot",
+            resource_id=snapshot.id,
+            before_json=before,
+            after_json=snapshot.to_audit_dict(),
+        )
+        return snapshot
+
+    def get_snapshot(self, project_id: str, snapshot_id: str) -> CanonSnapshot:
+        return self._get_snapshot(project_id, snapshot_id)
+
+    def list_snapshot_facts(self, project_id: str, snapshot_id: str) -> list[CanonFact]:
+        snapshot = self._get_snapshot(project_id, snapshot_id)
+        return self._facts_for_ids(project_id, snapshot.fact_ids)
+
+    def diff_snapshots(
+        self, project_id: str, snapshot_id_a: str, snapshot_id_b: str
+    ) -> dict[str, list[CanonFact]]:
+        first = self._get_snapshot(project_id, snapshot_id_a)
+        second = self._get_snapshot(project_id, snapshot_id_b)
+        facts_a = self._facts_for_ids(project_id, first.fact_ids)
+        facts_b = self._facts_for_ids(project_id, second.fact_ids)
+        ids_a = {fact.id for fact in facts_a}
+        ids_b = {fact.id for fact in facts_b}
+
+        added = [fact for fact in facts_b if fact.id not in ids_a]
+        superseded: list[CanonFact] = []
+        removed: list[CanonFact] = []
+        for fact in facts_a:
+            if fact.id in ids_b:
+                continue
+            replacement_id = fact.superseded_by_fact_id
+            if replacement_id and replacement_id in ids_b:
+                superseded.append(fact)
+                continue
+            if any(other.supersedes_fact_id == fact.id for other in facts_b):
+                superseded.append(fact)
+                continue
+            removed.append(fact)
+
+        return {
+            "added": _sort_facts(added),
+            "removed": _sort_facts(removed),
+            "superseded": _sort_facts(superseded),
+        }
+
+    def replay_snapshot(
+        self,
+        *,
+        project_id: str,
+        snapshot_id: str,
+        scene_id: str | None = None,
+        as_of_story_time: str | None = None,
+    ) -> list[CanonFact]:
+        snapshot = self._get_snapshot(project_id, snapshot_id)
+        try:
+            cleaned_scene = (
+                require_uuid(scene_id, "scene_id") if scene_id is not None else None
+            )
+            cleaned_as_of = require_optional_story_time(as_of_story_time)
+        except CanonValidationError as exc:
+            raise CanonServiceError(
+                422, {"error": exc.error, "message": exc.message}
+            ) from exc
+        if cleaned_scene is None and cleaned_as_of is None:
+            raise CanonServiceError(
+                422,
+                {
+                    "error": "replay_point_required",
+                    "message": (
+                        "Replay requires scene_id and/or as_of_story_time "
+                        "plus snapshot_id."
+                    ),
+                },
+            )
+        results: list[CanonFact] = []
+        for fact in self._facts_for_ids(project_id, snapshot.fact_ids):
+            if cleaned_scene is not None and fact.valid_from_scene_id != cleaned_scene:
+                continue
+            if cleaned_as_of is not None and not _story_time_in_effect(
+                fact.effective_story_time, cleaned_as_of
+            ):
+                continue
+            results.append(fact)
+        return _sort_facts(results)
+
+    def _active_facts_as_of(
+        self, project_id: str, *, as_of_story_time: str | None
+    ) -> list[CanonFact]:
+        results: list[CanonFact] = []
+        for fact in self._repo.list_facts(project_id):
+            if fact.status != FACT_ACTIVE:
+                continue
+            if as_of_story_time is not None and not _story_time_in_effect(
+                fact.effective_story_time, as_of_story_time
+            ):
+                continue
+            results.append(fact)
+        return results
+
+    def _facts_for_ids(self, project_id: str, fact_ids: list[str]) -> list[CanonFact]:
+        """Return only facts named by the snapshot. Never live current Canon."""
+        allowed = set(fact_ids)
+        results: list[CanonFact] = []
+        for fact in self._repo.list_facts(project_id):
+            if fact.id in allowed:
+                results.append(fact)
+        return _sort_facts(results)
+
+    def _get_snapshot(self, project_id: str, snapshot_id: str) -> CanonSnapshot:
+        self._require_project(project_id)
+        snapshot = self._repo.get_snapshot(snapshot_id)
+        if snapshot is None or snapshot.project_id != project_id:
+            raise CanonServiceError(404, {"error": "canon_snapshot_not_found"})
+        return snapshot
+
     def _new_fact(
         self,
         *,
@@ -465,9 +673,11 @@ class CanonService:
         if self._story.get_project(project_id) is None:
             raise CanonServiceError(404, {"error": "project_not_found"})
 
-    def _require_human(self, actor: Actor, *, action: str) -> None:
+    def _require_human(
+        self, actor: Actor, *, action: str, resource: str = "Canon Fact"
+    ) -> None:
         try:
-            require_human_editor(actor, action=action, resource="Canon Fact")
+            require_human_editor(actor, action=action, resource=resource)
         except ActorError as exc:
             raise CanonServiceError(
                 403,
@@ -513,6 +723,10 @@ def _require_created_by(created_by: Any, actor: Actor) -> str:
             "message": "created_by or X-Actor-Id is required (human 主编).",
         },
     )
+
+
+def _sort_facts(facts: list[CanonFact]) -> list[CanonFact]:
+    return sorted(facts, key=lambda item: (item.id, item.predicate))
 
 
 def _story_time_in_effect(effective: str, as_of: str) -> bool:

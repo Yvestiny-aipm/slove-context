@@ -1,6 +1,9 @@
-"""HTTP routes for the minimal Canon API (node 2.2).
+"""HTTP routes for the minimal Canon API (node 2.2 + 2.3).
 
-No PATCH that mutates an Active fact body. No snapshot freeze / replay.
+No PATCH that mutates an Active fact body.
+Node 2.3: snapshot create / freeze / facts / diff / replay.
+Snapshot queries never replace live GET /canon-facts.
+No Scene Card, Context Pack, or generator.
 """
 
 from __future__ import annotations
@@ -58,6 +61,12 @@ class SupersedeFactBody(ActorBody):
     source_type: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     status: str | None = None
+
+
+class CreateSnapshotBody(ActorBody):
+    as_of_scene_seq: int | None = None
+    as_of_story_time: str | None = None
+    note: str | None = None
 
 
 def _service(request: Request) -> CanonService:
@@ -227,4 +236,110 @@ def supersede_fact(
     return {
         "superseded": result["old"].to_public_dict(),
         "fact": result["new"].to_public_dict(),
+    }
+
+
+@router.post("/projects/{project_id}/canon-snapshots", status_code=201)
+def create_snapshot(
+    request: Request, project_id: str, body: CreateSnapshotBody
+) -> dict[str, Any]:
+    try:
+        snapshot = _service(request).create_snapshot(
+            project_id=project_id,
+            payload=body.model_dump(),
+            actor=_actor(request, body),
+        )
+    except CanonServiceError as exc:
+        _raise(exc)
+    return snapshot.to_public_dict()
+
+
+@router.post("/projects/{project_id}/canon-snapshots/{snapshot_id}/freeze")
+def freeze_snapshot(
+    request: Request,
+    project_id: str,
+    snapshot_id: str,
+    body: ActorBody | None = None,
+) -> dict[str, Any]:
+    try:
+        snapshot = _service(request).freeze_snapshot(
+            project_id, snapshot_id, _actor(request, body)
+        )
+    except CanonServiceError as exc:
+        _raise(exc)
+    return snapshot.to_public_dict()
+
+
+@router.get("/projects/{project_id}/canon-snapshots/{snapshot_id}")
+def get_snapshot(request: Request, project_id: str, snapshot_id: str) -> dict[str, Any]:
+    try:
+        snapshot = _service(request).get_snapshot(project_id, snapshot_id)
+    except CanonServiceError as exc:
+        _raise(exc)
+    return snapshot.to_public_dict()
+
+
+@router.get("/projects/{project_id}/canon-snapshots/{snapshot_id}/facts")
+def list_snapshot_facts(
+    request: Request, project_id: str, snapshot_id: str
+) -> dict[str, Any]:
+    try:
+        facts = _service(request).list_snapshot_facts(project_id, snapshot_id)
+    except CanonServiceError as exc:
+        _raise(exc)
+    return {
+        "project_id": project_id,
+        "snapshot_id": snapshot_id,
+        "facts": [item.to_public_dict() for item in facts],
+    }
+
+
+@router.get(
+    "/projects/{project_id}/canon-snapshots/{snapshot_id_a}/diff/{snapshot_id_b}"
+)
+def diff_snapshots(
+    request: Request,
+    project_id: str,
+    snapshot_id_a: str,
+    snapshot_id_b: str,
+) -> dict[str, Any]:
+    try:
+        result = _service(request).diff_snapshots(
+            project_id, snapshot_id_a, snapshot_id_b
+        )
+    except CanonServiceError as exc:
+        _raise(exc)
+    return {
+        "project_id": project_id,
+        "from_snapshot_id": snapshot_id_a,
+        "to_snapshot_id": snapshot_id_b,
+        "added": [item.to_public_dict() for item in result["added"]],
+        "removed": [item.to_public_dict() for item in result["removed"]],
+        "superseded": [item.to_public_dict() for item in result["superseded"]],
+    }
+
+
+@router.get("/projects/{project_id}/canon-replay")
+def replay_canon(
+    request: Request,
+    project_id: str,
+    snapshot_id: str,
+    scene_id: str | None = None,
+    as_of_story_time: str | None = None,
+) -> dict[str, Any]:
+    try:
+        facts = _service(request).replay_snapshot(
+            project_id=project_id,
+            snapshot_id=snapshot_id,
+            scene_id=scene_id.strip() if scene_id else None,
+            as_of_story_time=(as_of_story_time.strip() if as_of_story_time else None),
+        )
+    except CanonServiceError as exc:
+        _raise(exc)
+    return {
+        "project_id": project_id,
+        "snapshot_id": snapshot_id,
+        "scene_id": scene_id,
+        "as_of_story_time": as_of_story_time,
+        "facts": [item.to_public_dict() for item in facts],
     }
