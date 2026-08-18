@@ -4,7 +4,7 @@
 一次只实现一个已冻结节点。当前节点是 7.3：人类审校队列（仅 Fake / 内存仓库）。不要启动节点 8.x（不要实现编排 / worker / Agent 注册表）。不要启动节点 9.x。不要批准或提交 Canon（审校队列 approve 候选变更只复用 4.2 裁决，不 submit）。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要抽取候选。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格报告批准不是 Canon 批准，默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用或生成器。节点 7.2 只做 Style Validation v1。批准风格资产不是 Canon 批准，不写 Canon。风格校验不是 5.x Validation Run。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、8.x worker、真实模型调用或生成器。节点 7.3 只做人类审校队列。批准风格资产 / Style Report 不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。
 
 ## 已冻结、默认不可改
 
