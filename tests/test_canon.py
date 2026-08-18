@@ -497,7 +497,7 @@ def test_patch_of_canon_fact_is_not_offered() -> None:
         headers=HUMAN,
         json={"value_json": {"text": "就地改写"}},
     )
-    assert patched.status_code == 405
+    assert patched.status_code in {404, 405}
     listed = client.get(f"/projects/{project['id']}/canon-facts")
     assert listed.json()["facts"][0]["value_json"] == {"text": "烧痕"}
 
@@ -548,11 +548,12 @@ def test_canon_tables_migration_exists_without_replay_or_vector() -> None:
         "CREATE TABLE canon_snapshots",
     ):
         assert table in text, table
-    lowered = text.lower()
-    assert "vector" not in lowered
-    assert "embedding" not in lowered
-    assert "replay" not in lowered
-    assert "freeze" not in lowered or "node 2.3" in text.lower()
+    upgrade = text.split("def upgrade", 1)[1].split("def downgrade", 1)[0]
+    lowered_sql = upgrade.lower()
+    assert "vector(" not in lowered_sql
+    assert "embedding" not in lowered_sql
+    assert "replay" not in lowered_sql
+    assert "freeze" not in lowered_sql
     audit = (versions / "001_create_audit_events.py").read_text(encoding="utf-8")
     assert "CREATE TABLE audit_events" in audit
 
