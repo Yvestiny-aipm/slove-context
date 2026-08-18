@@ -3,8 +3,8 @@
 Persists structured audit rows through an AuditSink. The FastAPI app does
 not open a database connection in this node; unit tests use InMemoryAuditSink.
 
-This is not a Canon table and has no Canon write path. Story Project /
-Story Spec CRUD is node 2.1 and is out of scope. Auto-approve and
+This is not a Canon table and has no Canon write path. Node 2.1 Story
+Project / Story Spec writes reuse this writer. Auto-approve and
 multi-project are not MVP-normal (see docs/mvp-scope.md).
 """
 

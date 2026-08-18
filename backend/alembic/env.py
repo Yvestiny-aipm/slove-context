@@ -1,8 +1,8 @@
-"""Alembic environment (node 1.3).
+"""Alembic environment (node 1.3 + 2.1).
 
-Handwritten migrations only. Does not autogenerate from business models —
-there are no Canon / Story Project tables in this node.
-Unit tests do not run this file against a live database.
+Handwritten migrations only. Does not autogenerate from business models.
+There are no Canon tables. Unit tests do not run this file against a
+live database.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 1.3：审计与结构化日志框架。不要启动节点 2.1（不要做 Story Project / Story Spec）。
+一次只实现一个已冻结节点。当前节点是 2.1：Story Project 与 Story Spec 持久化 API。不要启动节点 2.2（不要做 Canon 实体 / 事实表）。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
 不要把未实现行为写成已完成。不要发明已落地的 Canon、鉴权、队列或模型调用。
@@ -71,3 +71,27 @@ cd backend && alembic upgrade head
 - 保留 `GET /healthz` 与 `GET /version`。
 - **不是** Canon 表或 Canon 写入路径、用户鉴权、队列、模型调用。
 - **不是** 节点 2.1 的 Story Project / Story Spec。
+
+## 命令示例（节点 2.1）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Story Spec API（schema 校验失败、未批准不得当作已批准、已批准禁止就地 PATCH）；不连 Postgres，不调用外部模型。`make migrate` 需要本地 Postgres，建 `audit_events`、`story_projects`、`story_specs`、`story_spec_versions`。不建 Canon 表。
+
+## 节点 2.1 边界
+
+- Story Project / Story Spec / Revision 持久化与 API。
+- 仅一个故事项目：创建第二个项目被拒绝。
+- 仅人工主编可批准 Spec（系统 / 生成 Agent / 审校 Agent 不可）。无自动批准路径。
+- Spec 批准不是 Canon 批准；本节点不写 Canon。
+- 已批准 Spec 不得就地 PATCH；改动必须出新的草稿 Revision。
+- 载荷对照 `contracts/story-spec.schema.json`（Draft 2020-12）；非法输入 422。
+- 写操作走既有 `AuditWriter`（1.3），沿用默认脱敏。
+- 保留 `GET /healthz`、`GET /version`、`/openapi.json` 与 `audit_events`。
+- **不是** Canon 实体 / 事实表（节点 2.2）。
+- **不是** 角色、场景、模型调用、前端。
