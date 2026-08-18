@@ -426,10 +426,8 @@ def test_healthz_and_prior_apis_remain() -> None:
     )
     assert "/projects/{project_id}/chapters/generate" not in paths
     assert "/projects/{project_id}/style-score" not in paths
-    assert "/projects/{project_id}/review-queue" not in paths
     assert "/projects/{project_id}/auto-approve" not in paths
     assert not any("seed-status" in path for path in paths)
-    assert not any("review-queue" in path for path in paths)
 
 
 def test_report_persists_versions_and_does_not_write_canon() -> None:

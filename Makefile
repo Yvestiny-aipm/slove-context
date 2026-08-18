@@ -11,7 +11,7 @@ install:
 # scene + llm gateway + scene plan / scene draft / candidate extract +
 # human approve / submit + scene / chapter summaries + validation run +
 # repair task + context pack + outline revision + style guide / sample +
-# style validation)
+# style validation + review queue)
 # and contracts/ (0.4). No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts

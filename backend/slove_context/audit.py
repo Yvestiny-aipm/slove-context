@@ -19,6 +19,9 @@ Approving a Style Guide or authorizing a Style Sample is not Canon
 approval and does not write Canon.
 Style Validation (7.2) writes reports only; findings do not write
 Canon and do not block Canon submit.
+Review-queue decisions (7.3) do not write Canon. Approving a
+Candidate Change on the queue reuses 4.2 approve only. Approving a
+Style Report is not Canon approval.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
