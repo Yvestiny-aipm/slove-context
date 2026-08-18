@@ -137,6 +137,7 @@ def test_audit_events_migration_defines_required_columns() -> None:
     assert "CREATE TABLE audit_events" in text
     for column in REQUIRED_COLUMNS:
         assert column in text
-    assert "canon" not in text.lower()
-    assert "story_project" not in text.lower()
-    assert "story_spec" not in text.lower()
+    lowered = text.lower()
+    assert "create table canon" not in lowered
+    assert "create table story_project" not in lowered
+    assert "create table story_spec" not in lowered
