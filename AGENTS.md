@@ -672,3 +672,23 @@ cd backend && alembic upgrade head
 - 写既有 `AuditWriter`，沿用 1.3 脱敏；完整 Prompt / 散文 / 正例 / 反例 / `text_evidence` 不得入审计。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–9.2 API。
 - **不是** 节点 10.x、自动批准、向量检索、真实模型供应商客户端、改 5.x 硬规则、改 3.4 生成作业、改写 9.1 expected 答案、改写 9.2 历史实验对比。
+
+## 命令示例（节点 UI.1）
+
+本地工作流前端 Demo。仅 Fake Provider。不是 10.x，不是真实模型集成。
+
+```bash
+python3 -m slove_context.demo --seed-only
+make demo
+# 打开 http://127.0.0.1:5173
+make frontend-test
+```
+
+`python -m slove_context.demo` 在进程内播种一个样例项目（规格 / Canon Snapshot / 场景卡 / Plan / Draft / Candidate / Validation / Review / Summary），然后启动 FastAPI。`make demo` 同时启动后端与 Vite 前端。开发态 CORS 仅放行 `http://localhost:5173` 与 `http://127.0.0.1:5173`；生产配置不开放 `*`。播种是 CLI，不是生产 seed-status HTTP。审校「批准」走既有 7.3 / 4.2，不自动 submit Canon。
+
+## 节点 UI.1 边界
+
+- 八个中文页面：总览 / 项目规格 / Canon / 场景 / 校验 / 审校 / DAG / 发布门。
+- 每页可见横幅：「Demo / Fake Provider / 非真实模型」。
+- 前端测试（vitest）：关键视图可渲染；批准打审校队列 approve；批准不触发 submit。
+- **不得**调用真实模型、自动批准 / 自动提交 Canon、加入章级或全书级生成、或新增生产 seed-status HTTP。

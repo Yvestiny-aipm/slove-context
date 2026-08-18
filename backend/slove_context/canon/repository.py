@@ -34,6 +34,8 @@ class CanonRepository(Protocol):
 
     def get_snapshot(self, snapshot_id: str) -> CanonSnapshot | None: ...
 
+    def list_snapshots(self, project_id: str) -> list[CanonSnapshot]: ...
+
     def save_snapshot(self, snapshot: CanonSnapshot) -> None: ...
 
 
@@ -92,6 +94,13 @@ class InMemoryCanonRepository:
 
     def get_snapshot(self, snapshot_id: str) -> CanonSnapshot | None:
         return self.snapshots.get(snapshot_id)
+
+    def list_snapshots(self, project_id: str) -> list[CanonSnapshot]:
+        items = [
+            item for item in self.snapshots.values() if item.project_id == project_id
+        ]
+        items.sort(key=lambda item: (item.created_at, item.id))
+        return items
 
     def save_snapshot(self, snapshot: CanonSnapshot) -> None:
         self.snapshots[snapshot.id] = snapshot

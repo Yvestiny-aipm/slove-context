@@ -97,6 +97,19 @@ def _raise(exc: ValidationServiceError) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
+@router.get("/projects/{project_id}/validation-runs")
+def list_validation_runs(request: Request, project_id: str) -> dict[str, Any]:
+    try:
+        items = _service(request).list_runs(project_id)
+    except ValidationServiceError as exc:
+        _raise(exc)
+    return {
+        "items": [item.to_public_dict() for item in items],
+        "writes_canon": False,
+        "auto_approved": False,
+    }
+
+
 @router.post("/projects/{project_id}/validation-runs", status_code=201)
 def trigger_validation_run(
     request: Request, project_id: str, body: TriggerRunBody | None = None

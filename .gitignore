@@ -26,6 +26,11 @@ model-outputs/
 *.gguf
 evals/out/
 
+# Frontend (node UI.1 Demo)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 # OS / editor
 .DS_Store
 .idea/

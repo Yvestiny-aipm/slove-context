@@ -239,6 +239,18 @@ def supersede_fact(
     }
 
 
+@router.get("/projects/{project_id}/canon-snapshots")
+def list_snapshots(request: Request, project_id: str) -> dict[str, Any]:
+    try:
+        items = _service(request).list_snapshots(project_id)
+    except CanonServiceError as exc:
+        _raise(exc)
+    return {
+        "project_id": project_id,
+        "items": [item.to_public_dict() for item in items],
+    }
+
+
 @router.post("/projects/{project_id}/canon-snapshots", status_code=201)
 def create_snapshot(
     request: Request, project_id: str, body: CreateSnapshotBody

@@ -200,6 +200,10 @@ class DagService:
             raise DagServiceError(404, {"error": "dag_not_found"})
         return dag
 
+    def list_for_scene(self, project_id: str, scene_id: str) -> list[SceneDag]:
+        self._require_project(project_id)
+        return self._repo.list_for_scene(project_id, scene_id)
+
     def graph(self, project_id: str, dag_id: str) -> dict[str, Any]:
         return self.get_dag(project_id, dag_id).graph_dict()
 
