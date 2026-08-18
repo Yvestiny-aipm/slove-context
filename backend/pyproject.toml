@@ -1,7 +1,7 @@
 [project]
 name = "slove-context"
 version = "0.0.0"
-description = "Local monolith (node 8.1). Health/version, audit logs, Story Project / Spec, Canon, Snapshot, Scene Card, Fake LLM Gateway, Scene Plan / Scene Draft jobs, Candidate Change extract / approve / submit, Scene / Chapter summaries, Validation Run, Repair Task, Context Pack assembler, Outline Revision, Style Guide / Sample, Style Validation, human review queue, local job queue and Worker."
+description = "Local monolith (node 8.2). Health/version, audit logs, Story Project / Spec, Canon, Snapshot, Scene Card, Fake LLM Gateway, Scene Plan / Scene Draft jobs, Candidate Change extract / approve / submit, Scene / Chapter summaries, Validation Run, Repair Task, Context Pack assembler, Outline Revision, Style Guide / Sample, Style Validation, human review queue, local job queue and Worker, Agent Registry and permission boundaries."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from slove_context.agents.permissions import PermissionDenied, PermissionGuard
 from slove_context.audit import AuditWriter
 from slove_context.candidate_change.models import (
     APPROVE_FROM,
@@ -487,7 +488,7 @@ class ApprovalService:
 
     def _require_human(self, actor: Actor, *, action: str) -> Actor:
         try:
-            return require_human_editor(
+            editor = require_human_editor(
                 actor, action=action, resource="Candidate Change"
             )
         except ActorError as exc:
@@ -499,6 +500,15 @@ class ApprovalService:
                     "actor_type": actor.actor_type or None,
                 },
             ) from exc
+        try:
+            guard = PermissionGuard()
+            if action == "approve":
+                guard.assert_actor_may_approve_canon(editor)
+            elif action == "submit":
+                guard.assert_actor_may_submit_canon(editor)
+        except PermissionDenied as exc:
+            raise CandidateChangeServiceError(exc.status_code, exc.detail) from exc
+        return editor
 
     def _write_audit(
         self,

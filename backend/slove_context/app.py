@@ -45,7 +45,13 @@ Node 8.1: local job queue and in-process Worker. The Worker
 dispatches by job_type to existing plan / draft / extract / validate
 / repair / summarize / context_pack services. It does not approve
 Candidate Changes, does not submit Canon, and does not take review-
-queue decisions. No Agent registry (8.2), DAG (8.3), or batch (8.4).
+queue decisions.
+Node 8.2: Agent Registry and permission boundaries. Seven agents
+are registered. The service layer re-checks permissions; unauthorized
+tools are 403. Agent Runs archive input/output refs, tool calls,
+cost, duration, and error. No Agent (including Worker / system) may
+bypass Approval to write Canon. Human Approver is the only
+Canon-approve actor. No DAG (8.3) or batch (8.4).
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -61,6 +67,11 @@ seed-status route. Built-in /openapi.json is kept.
 from fastapi import FastAPI
 
 from slove_context import __version__
+from slove_context.agents.repository import (
+    AgentRepository,
+    InMemoryAgentRunRepository,
+)
+from slove_context.agents.routes import router as agents_router
 from slove_context.audit import AuditWriter, InMemoryAuditSink
 from slove_context.candidate_change.models import (
     DEFAULT_REPAIR_TASK_TYPE as EXTRACT_REPAIR_TASK_TYPE,
@@ -162,6 +173,7 @@ def create_app(
     style_validation_repository: StyleValidationRepository | None = None,
     review_queue_repository: ReviewQueueRepository | None = None,
     job_repository: JobRepository | None = None,
+    agent_repository: AgentRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -178,6 +190,7 @@ def create_app(
     validation_auto_run: bool = True,
     style_validation_auto_run: bool = True,
     job_auto_run: bool = False,
+    agent_run_auto_run: bool = True,
     job_timeout_s: float = 30.0,
     job_base_backoff_s: float = 0.0,
 ) -> FastAPI:
@@ -220,6 +233,9 @@ def create_app(
         review_queue_repository or InMemoryReviewQueueRepository()
     )
     application.state.job_repository = job_repository or InMemoryJobRepository()
+    application.state.agent_repository = (
+        agent_repository or InMemoryAgentRunRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -240,6 +256,7 @@ def create_app(
     application.state.validation_auto_run = validation_auto_run
     application.state.style_validation_auto_run = style_validation_auto_run
     application.state.job_auto_run = job_auto_run
+    application.state.agent_run_auto_run = agent_run_auto_run
     application.state.job_timeout_s = job_timeout_s
     application.state.job_base_backoff_s = job_base_backoff_s
     application.state.worker = Worker(
@@ -264,6 +281,7 @@ def create_app(
     application.include_router(style_validation_router)
     application.include_router(review_queue_router)
     application.include_router(jobs_router)
+    application.include_router(agents_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

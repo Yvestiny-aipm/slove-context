@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 8.1：本地作业队列与 Worker（仅 Fake / 内存仓库）。不要启动节点 8.2（不要实现 Agent 注册表 / 权限）。不要启动节点 8.3 DAG 或 8.4 批量。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。Worker 不得批准 Candidate Change、不得提交 Canon、不得做审校队列人类裁决。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格发现默认不阻断 Canon 提交。
+一次只实现一个已冻结节点。当前节点是 8.2：Agent 注册表与权限边界（仅 Fake / 内存仓库）。不要启动节点 8.3（不要实现 DAG）。不要启动节点 8.4。不要实现 Agent 自动批准 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。任何 Agent（含 Worker / system）不得绕过 Approval 写 Canon。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格发现默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
-不要把未实现行为写成已完成。不要发明已落地的鉴权、Agent 注册表、真实模型调用或生成器。节点 8.1 只做本地作业队列与 Worker。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、8.3 DAG、真实模型调用或生成器。节点 8.2 只做 Agent 注册表与权限边界。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。
 
 ## 已冻结、默认不可改
 
@@ -518,3 +518,30 @@ cd backend && alembic upgrade head
 - 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–7.3 API。
 - **不是** 节点 8.2 Agent 注册表 / 权限、8.3 DAG、8.4 批量、节点 9.x、自动批准、向量检索、真实模型供应商客户端、Worker 写 Canon。
+
+## 命令示例（节点 8.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker，以及 Agent 注册表 / 权限边界（七类 Agent 注册、服务层权限再检查、未授权 403、Run 归档可回放、Canon 绕过失败、非 Human 不得批准、失败 / 取消不删除、2.1–8.1 API 仍在）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `agents`、`agent_runs`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide / Style Validation / 审校队列 / jobs 表，不建 DAG / 批量 / 真实模型网关表。
+
+## 节点 8.2 边界
+
+- 输入：已注册 Agent + 已存储的 `input_ref`（引用，不是瞬时正文）。
+- 七类 Agent：Outline（仅拟定 Outline / Scene Plan）、Draft（仅生成 Draft）、Extractor（仅提出 Candidate Change）、Consistency（仅产出 Validation Report）、Style（仅产出 Style Report）、Repair（仅产出新 Draft Revision）、Human Approver（唯一可批准 Canon 的角色）。
+- 每条 Agent 记录含 input schema、output schema、allowed tools、forbidden operations、model config、prompt version、timeout、cost cap。
+- 服务层必须再检查权限；不得只信 Agent Prompt。未授权调用返回 403。
+- Agent Run 记录 input ref、output ref、tool calls、cost、duration、error；可用这些引用回放。
+- 任何 Agent（含 Worker / system）不得绕过 Approval 写 Canon。Canon 写入仍只走 4.2 人类 submit。
+- `PermissionGuard.assert_allowed` 用于 Worker 分发以及审校 / 批准路径。
+- 8.1 `job_type` 可映射到 Agent id；Worker 仍不得批准 / 提交 Canon。
+- 失败 / 取消保留记录，不删除。无生产 seed-status HTTP 路由。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；完整 Prompt / 散文不得入审计。
+- 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–8.1 API。
+- **不是** 节点 8.3 DAG、8.4 批量、节点 9.x、自动批准、向量检索、真实模型供应商客户端、Agent 写 Canon。

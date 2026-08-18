@@ -1,9 +1,11 @@
-"""In-process Worker (node 8.1).
+"""In-process Worker (node 8.1 + 8.2 permission re-check).
 
 Dispatcher only. Claims queued jobs, serializes write jobs on a
 scene lock, and calls existing services by job_type. Timeout / backoff
 / max retries / dead-letter live here. Tests call tick() / run_once()
 / claim_one(). No background daemon. No Canon write. No approve.
+Job types map to Agent ids where helpful; PermissionGuard re-checks
+before dispatch. Worker still must not approve or submit Canon.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from slove_context.agents.permissions import PermissionDenied, PermissionGuard
 from slove_context.audit import AuditWriter
 from slove_context.candidate_change.service import CandidateChangeServiceError
 from slove_context.context_pack.service import ContextPackServiceError
@@ -313,6 +316,13 @@ def dispatch_existing(
     services: ExistingServices, job: Job, inputs: dict[str, Any]
 ) -> dict[str, Any]:
     """Call existing services. Never approve, submit, or review-decide."""
+    try:
+        PermissionGuard().assert_job_dispatch_allowed(job.job_type)
+    except PermissionDenied as exc:
+        raise WorkerDispatchError(
+            str(exc.detail.get("error") or "agent_permission_denied"),
+            str(exc.detail.get("message") or "Worker permission denied."),
+        ) from exc
     actor = Actor(actor_type=SYSTEM, actor_id="worker")
     if job.job_type == JOB_TYPE_PLAN:
         plan_job = services.plan.trigger_job(
@@ -407,7 +417,8 @@ def dispatch_existing(
         }
     raise WorkerDispatchError(
         "unsupported_job_type",
-        f"Unknown job_type {job.job_type}. Node 8.1 has no Agent registry.",
+        f"Unknown job_type {job.job_type}. Worker still must not "
+        "approve or submit Canon.",
     )
 
 
