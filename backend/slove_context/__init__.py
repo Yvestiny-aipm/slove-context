@@ -1,1 +1,3 @@
-"""Local monolith package placeholder. Node 1.1: no business logic."""
+"""Local monolith package. Node 1.2: health and version only."""
+
+__version__ = "0.0.0"

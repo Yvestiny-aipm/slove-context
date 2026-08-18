@@ -1,7 +1,7 @@
 # AGENTS.md
 
-本文件是节点 1.1 的核心交付：给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。本节点只建本地单体仓库骨架，不启动节点 1.2。
+本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
+一次只实现一个已冻结节点。当前节点是 1.2：可重复的本地开发环境（Postgres + FastAPI `/healthz` / `/version`）。不要启动节点 1.3（不要做审计 / 结构化日志系统）。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
 不要把未实现行为写成已完成。不要发明已落地的 Canon、鉴权、队列或模型调用。
@@ -33,8 +33,27 @@
 7. 运行格式化、类型检查、测试后才能结束。
 8. 输出变更摘要、执行命令、测试结果、风险项。
 
-## 节点 1.1 边界
+## 命令示例（节点 1.2）
 
-- 本仓库是本地单体骨架：有目录、约定、占位测试与占位编排文件。
-- **不是** 可运行的 Postgres / FastAPI 健康检查（那是 1.2）。
-- **不是** 小说写作业务功能，也不是 Canon 逻辑、用户鉴权、队列或模型调用。
+包管理只用 venv（`python3 -m venv` + `pip`）。不要加入 Poetry 或 uv。
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+make install
+make format
+make lint
+make typecheck
+make test
+docker compose up -d postgres
+uvicorn slove_context.app:app --app-dir backend --host 127.0.0.1 --port 8000
+```
+
+`make test` 用进程内 TestClient 检查 `/healthz`，不需要 Docker，不调用外部模型。
+
+## 节点 1.2 边界
+
+- 可启动的本地 Postgres（healthcheck + 持久卷）与 FastAPI `GET /healthz`、`GET /version`。
+- 节点 1.1 的仓库骨架已合并；本节点只补本地开发环境。
+- **不是** Canon 表或 Canon 写入路径、用户鉴权、队列、模型调用。
+- **不是** 节点 1.3 的审计 / 结构化日志系统（默认日志即可）。

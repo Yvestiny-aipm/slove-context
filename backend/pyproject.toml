@@ -1,9 +1,13 @@
 [project]
 name = "slove-context"
 version = "0.0.0"
-description = "Local monolith skeleton (node 1.1). No business logic."
+description = "Local monolith (node 1.2). Health and version routes only."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "httpx>=0.27.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -12,3 +16,11 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["slove_context*"]
+
+[tool.ruff]
+target-version = "py311"
+src = ["."]
+
+[tool.mypy]
+python_version = "3.11"
+pretty = true
