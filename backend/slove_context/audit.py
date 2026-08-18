@@ -7,10 +7,11 @@ Node 2.1 Story Project / Story Spec writes, node 2.2 Canon writes,
 node 2.3 Canon Snapshot create / freeze, node 3.1 Scene Card
 create / draft edit / approve / dependencies, node 3.3 Scene Plan
 jobs, node 3.4 Scene Draft jobs, and node 4.1 Candidate Change extract
-jobs, and node 4.2 human approve / reject / submit reuse this writer.
-Generating a Scene Plan or Scene Draft, or extracting Candidate Changes,
-is not Canon approval. Approving a Candidate Change is not a Canon write;
-only human submit writes Canon.
+jobs, node 4.2 human approve / reject / submit, and node 4.3 Scene /
+Chapter summary jobs reuse this writer.
+Generating a Scene Plan or Scene Draft, extracting Candidate Changes,
+or writing a Scene / Chapter summary is not Canon approval. Approving a
+Candidate Change is not a Canon write; only human submit writes Canon.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
@@ -72,6 +73,10 @@ _BODY_KEYS = frozenset(
         "raw_text",
         "content_text",
         "evidence_quote",
+        "summary",
+        "summary_text",
+        "scene_summary",
+        "chapter_summary",
     }
 )
 

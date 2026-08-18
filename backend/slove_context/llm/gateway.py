@@ -12,8 +12,9 @@ been written, do not retry that write.
 
 v1 wraps FakeProvider only. No live vendor HTTP. Scene Plan jobs (3.3)
 and Candidate Change extract jobs (4.1) call generate_structured;
-Scene Draft jobs (3.4) call generate_text; persist uses invoke_once.
-No Validate / Validation Run (4.2).
+Scene Draft jobs (3.4) and Scene / Chapter summary jobs (4.3) call
+generate_text; persist uses invoke_once. No Validate / Validation Run
+(5.x).
 """
 
 from __future__ import annotations

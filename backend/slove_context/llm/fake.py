@@ -60,6 +60,18 @@ EXTRACT_CANDIDATE_FIXTURES = {
     "extract_candidates_repair_fail": "extract_candidates_repair_fail.json",
 }
 
+# Node 4.3 Scene / Chapter summary fixtures. Placeholders, not product prose.
+SCENE_SUMMARY_FIXTURES = {
+    "scene_summary": "scene_summary_ok.json",
+    "scene_summary_ok": "scene_summary_ok.json",
+    "scene_summary_fail": "scene_summary_fail.json",
+}
+CHAPTER_SUMMARY_FIXTURES = {
+    "chapter_summary": "chapter_summary_ok.json",
+    "chapter_summary_ok": "chapter_summary_ok.json",
+    "chapter_summary_fail": "chapter_summary_fail.json",
+}
+
 
 class FakeProvider(Provider):
     """Deterministic in-process provider. Safe to retry: no persist side effects."""
@@ -154,6 +166,10 @@ class FakeProvider(Provider):
 
 
 def _text_fixture_name(task_type: str) -> str:
+    if task_type in CHAPTER_SUMMARY_FIXTURES:
+        return CHAPTER_SUMMARY_FIXTURES[task_type]
+    if task_type in SCENE_SUMMARY_FIXTURES:
+        return SCENE_SUMMARY_FIXTURES[task_type]
     if task_type in EXTRACT_CANDIDATE_FIXTURES:
         return EXTRACT_CANDIDATE_FIXTURES[task_type]
     if task_type in SCENE_DRAFT_FIXTURES:

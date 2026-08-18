@@ -12,10 +12,14 @@ Node 3.4: Scene Draft generation jobs (Fake Provider only).
 Node 4.1: Candidate Change extraction jobs (Fake Provider only; no Validate).
 Node 4.2: human approve / reject / submit for Candidate Changes.
 Approve does not write Canon; submit creates or supersedes a Canon Fact.
+Node 4.3: Scene / Chapter summary jobs (Fake Provider only).
+Scene Summary recaps one existing Scene Draft. Chapter Summary rolls up
+existing Scene Summaries. Summaries are not Canon / Draft / Candidate.
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
-Canon approval. Scene Plan, Scene Draft, and Candidate Change are not Canon.
-There is no Context Pack builder — draft jobs reference a static fixture.
+Canon approval. Scene Plan, Scene Draft, Candidate Change, and summaries
+are not Canon. There is no Context Pack builder — draft jobs reference a
+static fixture. There is no chapter-level prose generate entrance.
 Built-in /openapi.json is kept.
 """
 
@@ -54,6 +58,17 @@ from slove_context.scene_plan.repository import (
 from slove_context.scene_plan.routes import router as scene_plan_router
 from slove_context.story.repository import InMemoryStoryRepository, StoryRepository
 from slove_context.story.routes import router as story_router
+from slove_context.summary.models import (
+    DEFAULT_CHAPTER_TASK_TYPE as CHAPTER_SUMMARY_TASK_TYPE,
+)
+from slove_context.summary.models import (
+    DEFAULT_SCENE_TASK_TYPE as SCENE_SUMMARY_TASK_TYPE,
+)
+from slove_context.summary.repository import (
+    InMemorySummaryRepository,
+    SummaryRepository,
+)
+from slove_context.summary.routes import router as summary_router
 
 configure_json_logging()
 
@@ -66,6 +81,7 @@ def create_app(
     scene_plan_repository: ScenePlanRepository | None = None,
     scene_draft_repository: SceneDraftRepository | None = None,
     candidate_change_repository: CandidateChangeRepository | None = None,
+    summary_repository: SummaryRepository | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
     scene_plan_task_type: str = DEFAULT_TASK_TYPE,
@@ -75,6 +91,9 @@ def create_app(
     extract_task_type: str = EXTRACT_TASK_TYPE,
     extract_repair_task_type: str = EXTRACT_REPAIR_TASK_TYPE,
     extract_auto_run: bool = True,
+    scene_summary_task_type: str = SCENE_SUMMARY_TASK_TYPE,
+    chapter_summary_task_type: str = CHAPTER_SUMMARY_TASK_TYPE,
+    summary_auto_run: bool = True,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink."""
     application = FastAPI(title="slove-context", version=__version__)
@@ -92,6 +111,9 @@ def create_app(
     application.state.candidate_change_repository = (
         candidate_change_repository or InMemoryCandidateChangeRepository()
     )
+    application.state.summary_repository = (
+        summary_repository or InMemorySummaryRepository()
+    )
     application.state.audit_writer = writer
     application.state.llm_gateway = llm_gateway or LlmGateway(
         FakeProvider(), audit_writer=writer
@@ -103,12 +125,16 @@ def create_app(
     application.state.extract_task_type = extract_task_type
     application.state.extract_repair_task_type = extract_repair_task_type
     application.state.extract_auto_run = extract_auto_run
+    application.state.scene_summary_task_type = scene_summary_task_type
+    application.state.chapter_summary_task_type = chapter_summary_task_type
+    application.state.summary_auto_run = summary_auto_run
     application.include_router(story_router)
     application.include_router(canon_router)
     application.include_router(scene_router)
     application.include_router(scene_plan_router)
     application.include_router(scene_draft_router)
     application.include_router(candidate_change_router)
+    application.include_router(summary_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

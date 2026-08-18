@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 4.2：Candidate Change 人类批准与提交 Canon。不要启动节点 4.3。不要实现 Validation Run / Validate（那是 5.x）。不要写 Scene/Chapter 摘要。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 4.3：Scene / Chapter 摘要作业（仅 Fake Provider）。不要启动节点 5.x（不要实现 Validate / Validation Run）。不要抽取新的 Candidate Change。不要批准或提交 Canon。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Validate / Validation Run、Context Pack 组装器或生成器。节点 4.2 只做人类批准 / 拒绝 / 提交。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Validate / Validation Run、Context Pack 组装器或生成器。节点 4.3 只做 Scene / Chapter 摘要。摘要不是 Canon / Draft / Candidate。
 
 ## 已冻结、默认不可改
 
@@ -289,4 +289,28 @@ cd backend && alembic upgrade head
 - 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
 - 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–4.1 API。
-- **不是** 节点 4.3、Validation Run / Validate（5.x）、Scene / Chapter 摘要、Context Pack 组装器、向量检索、真实模型供应商客户端。
+- **不是** 节点 4.3 当时尚未交付的 Scene / Chapter 摘要、Validation Run / Validate（5.x）、Context Pack 组装器、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 4.3）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交，以及 Scene / Chapter 摘要作业（Fake Provider：场景摘要须基于已有草稿、章摘要由场景摘要汇总、修订不可变、幂等、失败可重试、取消不删除、不写 Canon、无整章散文生成入口）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `summary_jobs`、`scene_summaries`、`chapter_summaries`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract 表，不建 Validation Run / Context Pack 组装 / 真实模型网关表。
+
+## 节点 4.3 边界
+
+- 输入（Scene Summary）：已有且不可变的 Scene Draft 修订版本（`draft_revision_id` + 内容哈希）。草稿缺失则拒绝。
+- 输入（Chapter Summary）：该章内已有的 Scene Summary。由场景摘要汇总，不是一次生成整章散文。所需场景摘要缺失则拒绝。
+- 输出：短摘要 + 元数据（content hash、来源修订、Prompt 版本、generated_at）。修订不可变；重试出新 Revision，不得覆盖旧行。
+- Prompt 模板带版本号（`prompts/scene_summary.v1.md`、`prompts/chapter_summary.v1.md`）。仅 Fake Provider + 夹具。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 幂等：同一 `idempotency_key` 在 queued / running / succeeded 时返回原作业；取消为终态且不删除；失败作业可再开新作业 / Revision。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
+- 摘要不是 Canon、不是 Scene Draft、不是 Candidate Change。作业不写 Canon。无自动批准。无 Validate（5.x）。无新的抽取 / 批准 / 提交路径。
+- 生成单位为单个场景。无「生成一整章」入口。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–4.2 API。
+- **不是** 节点 5.x 的 Validate / Validation Run、Context Pack 组装器、向量检索、真实模型供应商客户端。
