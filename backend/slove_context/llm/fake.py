@@ -49,6 +49,17 @@ SCENE_DRAFT_FIXTURES = {
     "scene_draft_fail": "scene_draft_fail.json",
 }
 
+# Node 4.1 Candidate Change extract fixtures. Placeholders, not product prose.
+EXTRACT_CANDIDATE_FIXTURES = {
+    "extract_candidates": "extract_candidates_ok.json",
+    "extract_candidates_ok": "extract_candidates_ok.json",
+    "extract_candidates_invalid_json": "extract_candidates_invalid_json.json",
+    "extract_candidates_invalid_schema": "extract_candidates_invalid_schema.json",
+    "extract_candidates_repair": "extract_candidates_ok.json",
+    "extract_candidates_repair_ok": "extract_candidates_ok.json",
+    "extract_candidates_repair_fail": "extract_candidates_repair_fail.json",
+}
+
 
 class FakeProvider(Provider):
     """Deterministic in-process provider. Safe to retry: no persist side effects."""
@@ -92,8 +103,10 @@ class FakeProvider(Provider):
                 error=error,
                 fixture_name=filename,
             )
-        if not isinstance(parsed, dict):
-            raise StructuredParseError("structured fixture must decode to an object")
+        if not isinstance(parsed, (dict, list)):
+            raise StructuredParseError(
+                "structured fixture must decode to an object or array"
+            )
         return self._response(
             request,
             parsed_output=parsed,
@@ -141,6 +154,8 @@ class FakeProvider(Provider):
 
 
 def _text_fixture_name(task_type: str) -> str:
+    if task_type in EXTRACT_CANDIDATE_FIXTURES:
+        return EXTRACT_CANDIDATE_FIXTURES[task_type]
     if task_type in SCENE_DRAFT_FIXTURES:
         return SCENE_DRAFT_FIXTURES[task_type]
     if task_type in SCENE_PLAN_FIXTURES:
@@ -153,6 +168,8 @@ def _text_fixture_name(task_type: str) -> str:
 
 
 def _structured_fixture_name(task_type: str) -> str:
+    if task_type in EXTRACT_CANDIDATE_FIXTURES:
+        return EXTRACT_CANDIDATE_FIXTURES[task_type]
     if task_type in SCENE_PLAN_FIXTURES:
         return SCENE_PLAN_FIXTURES[task_type]
     if task_type in STRUCTURED_INVALID_TASK_TYPES:

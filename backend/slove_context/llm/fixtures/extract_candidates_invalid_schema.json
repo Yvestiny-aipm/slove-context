@@ -1,0 +1,11 @@
+{
+  "text": "{\"candidates\":[{\"subject\":\"残玉\",\"predicate\":\"被拾起\",\"object\":\"林晚\",\"value\":\"林晚持有残玉\",\"effective_story_time\":\"第一日黄昏\",\"confidence\":1.5}]}",
+  "prompt_version": "extract_candidates.v1",
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 20,
+    "total_tokens": 44,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

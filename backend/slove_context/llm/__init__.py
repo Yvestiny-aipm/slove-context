@@ -2,8 +2,10 @@
 
 No live vendor HTTP. Scene Plan jobs live in scene_plan (node 3.3) and
 call generate_structured. Scene Draft jobs live in scene_draft (node 3.4)
-and call generate_text. This package does not persist plans or drafts.
-No Canon writes. generate_* are idempotent reads with no persist side effects.
+and call generate_text. Candidate Change extract jobs live in
+candidate_change (node 4.1) and call generate_structured. This package
+does not persist plans, drafts, or candidates. No Canon writes.
+generate_* are idempotent reads with no persist side effects.
 """
 
 from slove_context.llm.errors import (

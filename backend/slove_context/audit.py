@@ -6,8 +6,9 @@ not open a database connection in this node; unit tests use InMemoryAuditSink.
 Node 2.1 Story Project / Story Spec writes, node 2.2 Canon writes,
 node 2.3 Canon Snapshot create / freeze, node 3.1 Scene Card
 create / draft edit / approve / dependencies, node 3.3 Scene Plan
-jobs, and node 3.4 Scene Draft jobs reuse this writer. Generating a
-Scene Plan or Scene Draft is not Canon approval.
+jobs, node 3.4 Scene Draft jobs, and node 4.1 Candidate Change extract
+jobs reuse this writer. Generating a Scene Plan or Scene Draft, or
+extracting Candidate Changes, is not Canon approval.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
@@ -68,6 +69,7 @@ _BODY_KEYS = frozenset(
         "story_body",
         "raw_text",
         "content_text",
+        "evidence_quote",
     }
 )
 
