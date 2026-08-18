@@ -9,9 +9,9 @@ Schema 为 JSON Schema Draft 2020-12。术语对齐节点 0.2，状态枚举对�
 ```bash
 cd contracts
 python3 -m pip install -r requirements.txt
-pytest
+python3 -m pytest
 ```
 
-也可在仓库根目录执行 `pytest contracts`（将发现 `contracts/tests`）。
+`pytest` 也可以，若未在 PATH 中则用 `python3 -m pytest`。也可在仓库根目录执行 `python3 -m pytest contracts`。
 
 每份 schema 在 `examples/` 下各有一份 valid 与一份 invalid 样例。测试断言：valid 必须通过，invalid 必须被拒绝。
