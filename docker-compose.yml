@@ -1,0 +1,12 @@
+# Node 1.1 skeleton only.
+# postgres / backend are placeholders and are not started.
+# Runnable Postgres / FastAPI health checks are node 1.2 — do not implement here.
+# Do not `docker compose up` expecting a healthy stack in this node.
+#
+# services:
+#   postgres:
+#     # image, ports, volumes: node 1.2
+#   backend:
+#     # app and health: node 1.2
+
+services: {}
