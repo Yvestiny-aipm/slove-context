@@ -6,8 +6,10 @@ Node 2.1: Story Project / Story Spec persistence APIs.
 Node 2.2: minimal Canon entities / evidence / facts API.
 Node 2.3: Canon Snapshot create / freeze / query / diff / replay.
 Node 3.1: Scene Card, in-story order, and scene dependencies.
+Node 3.2: LLM Gateway exists as an in-process Fake Provider (no generate
+HTTP, no Scene Plan job, no live vendor calls).
 
-No auth, queues, or model clients. Spec / Scene Card approval is not
+No auth, queues, or live model clients. Spec / Scene Card approval is not
 Canon approval. No Scene Plan, Scene Draft, Context Pack, or generator.
 Built-in /openapi.json is kept.
 """

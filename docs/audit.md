@@ -1,7 +1,7 @@
 # 审计与脱敏（节点 1.3）
 
 本文只说明节点 1.3 已落地的审计写入接口与默认脱敏。  
-不是鉴权、队列或模型网关。节点 2.1 的 Story Project / Story Spec 写操作、节点 2.2 的实体 / 证据 / Canon 事实创建、批准与废弃、节点 2.3 的 Canon Snapshot 创建与冻结、以及节点 3.1 的 Scene Card 创建 / 改草稿 / 批准 / 设依赖，复用本接口。Spec 批准不是 Canon 批准。快照冻结不是 Canon 批准。批准 Scene Card 不是 Canon 批准，不写 Canon。证据正文不得写入 `before_json` / `after_json`。
+不是鉴权、队列或真实模型客户端。节点 2.1 的 Story Project / Story Spec 写操作、节点 2.2 的实体 / 证据 / Canon 事实创建、批准与废弃、节点 2.3 的 Canon Snapshot 创建与冻结、节点 3.1 的 Scene Card 创建 / 改草稿 / 批准 / 设依赖，以及节点 3.2 LLM Gateway 在重试循环结束后的一次审计（若注入了 `AuditWriter`），复用本接口。Spec 批准不是 Canon 批准。快照冻结不是 Canon 批准。批准 Scene Card 不是 Canon 批准，不写 Canon。Gateway 不写 Canon。证据正文与完整 Prompt 不得写入 `before_json` / `after_json`。
 
 MVP 前提仍适用：一个故事项目、一名用户（创作者兼主编）、仅中文、必须人类批准。自动批准与多项目不是 MVP 正常行为。只有人类主编批准并提交后才能改 Canon。
 
@@ -63,10 +63,12 @@ FastAPI 本节点仍不打开数据库会话，也不写业务表。
 
 **禁止**：把原始 API 密钥、故事正文 / 散文、模型 Prompt 写入 Git、日志或 `audit_events.before_json` / `after_json`。
 
-本节点不调用写作模型；测试里的密钥与正文都是占位，不是真实密钥或产品正文。
+本节点不调用真实写作模型；测试里的密钥与正文都是占位，不是真实密钥或产品正文。节点 3.2 Fake Provider 的夹具同样是占位字符串，不是产品 Prompt 或散文。
+
+节点 3.2 网关日志走 `slove_context.llm.redact.redact_llm`，内部调用本文件的 `audit.redact`。`raw_response_reference` 只记 id/ref，不记原始响应体。
 
 ## 5. 本节点明确不是
 
-- 用户鉴权、队列、模型客户端 / 网关
+- 用户鉴权、队列、真实模型客户端
 - 自动批准、多项目
-- Context Pack、生成器、模型网关（节点 3.2 及以后）
+- Context Pack、生成器、Scene Plan 生成作业（节点 3.3）

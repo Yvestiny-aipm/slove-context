@@ -1,7 +1,7 @@
 [project]
 name = "slove-context"
 version = "0.0.0"
-description = "Local monolith (node 3.1). Health/version, audit logs, Story Project / Spec, Canon, Snapshot, Scene Card APIs."
+description = "Local monolith (node 3.2). Health/version, audit logs, Story Project / Spec, Canon, Snapshot, Scene Card APIs, Fake LLM Gateway."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
@@ -17,6 +17,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["slove_context*"]
+
+[tool.setuptools.package-data]
+slove_context = ["llm/fixtures/*.json"]
 
 [tool.ruff]
 target-version = "py311"

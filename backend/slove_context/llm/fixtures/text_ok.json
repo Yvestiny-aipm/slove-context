@@ -1,0 +1,11 @@
+{
+  "text": "FAKE_TEXT_FIXTURE",
+  "prompt_version": "fake-v1",
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 4,
+    "total_tokens": 14,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}
