@@ -1,0 +1,11 @@
+{
+  "text": "FAKE_CHAPTER_SUMMARY：本章由各场场景摘要汇总，林晚得玉。",
+  "prompt_version": "chapter_summary.v1",
+  "usage": {
+    "prompt_tokens": 18,
+    "completion_tokens": 14,
+    "total_tokens": 32,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

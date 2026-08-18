@@ -1,0 +1,15 @@
+{
+  "text": "",
+  "error": {
+    "code": "provider_failed",
+    "message": "Fake Provider scene_summary_fail fixture"
+  },
+  "prompt_version": "scene_summary.v1",
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 0,
+    "total_tokens": 16,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

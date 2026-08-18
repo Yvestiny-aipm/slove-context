@@ -1,0 +1,11 @@
+{
+  "text": "FAKE_SCENE_SUMMARY：林晚在河滩拾得残玉。",
+  "prompt_version": "scene_summary.v1",
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 12,
+    "total_tokens": 28,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

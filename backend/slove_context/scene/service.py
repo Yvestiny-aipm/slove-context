@@ -188,6 +188,10 @@ class SceneService:
             raise SceneServiceError(404, {"error": "scene_not_found"})
         return scene
 
+    def get_chapter(self, project_id: str, chapter_id: str) -> Chapter:
+        self._require_project(project_id)
+        return self._require_chapter(project_id, chapter_id)
+
     def list_scenes(self, project_id: str) -> list[Scene]:
         self._require_project(project_id)
         scenes = self._repo.list_scenes(project_id)
