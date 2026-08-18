@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 3.3：Scene Plan 生成作业（仅 Fake Provider）。不要启动节点 3.4（不要生成 Scene Draft）。不要调用任何真实模型 API。不要实现 Context Pack 或生成器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 3.4：Scene Draft 生成作业（仅 Fake Provider）。不要启动节点 4.1（不要做自动事实抽取）。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Scene Draft 生成、Context Pack 或生成器。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、自动事实抽取、Context Pack 组装器或生成器。
 
 ## 已冻结、默认不可改
 
@@ -211,4 +211,28 @@ cd backend && alembic upgrade head
 - Scene Plan 不是 Canon，也不是 Scene Draft。作业不写 Canon。无自动批准。
 - 生成单位为单个场景。无「生成一整章」入口。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–3.2 API。
-- **不是** 节点 3.4 的 Scene Draft 生成、Context Pack、向量检索、真实模型供应商客户端。
+- **不是** 节点 3.4 的 Scene Draft 生成、Context Pack 组装器、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 3.4）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan 作业，以及 Scene Draft 生成作业（Fake Provider：成功、失败、幂等、取消、修订版本、审计脱敏）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `scene_draft_jobs`、`scene_drafts`。不重建 Canon / 项目 / Scene Card / Scene Plan 表，不建 Candidate Change / Context Pack 组装表。
+
+## 节点 3.4 边界
+
+- 输入：已批准且可生成的 Scene Card + 有效 Scene Plan + 指定 Canon Snapshot + 预冻结 Context Pack 引用（静态夹具；本节点没有 Context Pack 组装器）。
+- 输出：不可变 Scene Draft 散文 + 生成元数据 + 输入版本引用 + 内容哈希。重试出新 Revision，不得覆盖旧行。
+- 草稿至多 `Generated`（可供后续抽取），不得自动批准或发表，不写 Canon。
+- Prompt 模板带版本号（`prompts/scene_draft.v1.md`）；只生成这一场散文；禁止写 Canon。
+- 幂等：同一 `idempotency_key` 在 queued / running / succeeded 时返回原作业；成功后再生成须新 key（或省略）并出新 Revision；取消为终态且不删除；失败作业可再开新作业 / Revision。
+- 仅 Fake Provider + 夹具。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
+- 生成单位为单个场景。无「生成一整章」入口。无自动事实抽取（节点 4.1）。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–3.3 API。
+- **不是** 节点 4.1 的自动事实抽取、Candidate Change 作业、Context Pack 组装器、向量检索、真实模型供应商客户端。

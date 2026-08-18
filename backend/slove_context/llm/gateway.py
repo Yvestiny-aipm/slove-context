@@ -11,7 +11,8 @@ must use invoke_once, which runs exactly once. If audit+state has already
 been written, do not retry that write.
 
 v1 wraps FakeProvider only. No live vendor HTTP. Scene Plan jobs (3.3)
-call generate_structured; persist uses invoke_once. No Scene Draft (3.4).
+call generate_structured; Scene Draft jobs (3.4) call generate_text;
+persist uses invoke_once. No automatic fact extraction (4.1).
 """
 
 from __future__ import annotations

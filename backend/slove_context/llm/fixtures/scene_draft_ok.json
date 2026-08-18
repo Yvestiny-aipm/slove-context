@@ -1,0 +1,11 @@
+{
+  "text": "FAKE_SCENE_DRAFT_PROSE：河滩风冷，林晚看见一点光，伸手拾起残玉。",
+  "prompt_version": "scene_draft.v1",
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 18,
+    "total_tokens": 38,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

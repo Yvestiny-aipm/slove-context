@@ -173,8 +173,6 @@ def test_healthz_and_prior_apis_still_present() -> None:
     assert "/projects/{project_id}/scene-plan-jobs/{job_id}" in paths
     assert "/projects/{project_id}/scenes/{scene_id}/plans/current" in paths
     assert "/projects/{project_id}/chapters/generate" not in paths
-    assert "/projects/{project_id}/scenes/{scene_id}/drafts" not in paths
-    assert "/projects/{project_id}/scenes/{scene_id}/drafts/jobs" not in paths
 
 
 def test_prompt_template_has_version_requires_json_forbids_prose() -> None:
@@ -399,13 +397,6 @@ def test_review_agent_cannot_trigger_and_no_chapter_draft() -> None:
     assert blocked.status_code == 403
     assert (
         client.post(f"/projects/{project['id']}/chapters/generate", json={}).status_code
-        == 404
-    )
-    assert (
-        client.post(
-            f"/projects/{project['id']}/scenes/{scene['id']}/drafts/jobs",
-            json={"snapshot_id": snapshot["id"]},
-        ).status_code
         == 404
     )
 
