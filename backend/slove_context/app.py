@@ -41,16 +41,21 @@ Report subjects. Only a human 主编 may approve / reject /
 request_revision / escalate, each with a reason_code. Candidate
 approve reuses 4.2 (verdict only, not submit). Style-report approve
 is not Canon approval and does not block Canon submit.
+Node 8.1: local job queue and in-process Worker. The Worker
+dispatches by job_type to existing plan / draft / extract / validate
+/ repair / summarize / context_pack services. It does not approve
+Candidate Changes, does not submit Canon, and does not take review-
+queue decisions. No Agent registry (8.2), DAG (8.3), or batch (8.4).
 
-No auth, live model clients, or 8.x workers. Spec / Scene Card
-approval is not Canon approval. Scene Plan, Scene Draft, Candidate
-Change, summaries, Validation Runs, Repair Tasks, Context Packs,
-Outline Revisions, Style Guide / Sample approvals, Style Validation
-reports, and review-queue decisions are not Canon writes. Scene Draft
-jobs still accept the 3.4 static fixture id or a frozen assembler
-pack. There is no chapter-level or book-level generate entrance and
-no chapter-level Context Pack. No production seed-status route.
-Built-in /openapi.json is kept.
+No auth or live model clients. Spec / Scene Card approval is not
+Canon approval. Scene Plan, Scene Draft, Candidate Change,
+summaries, Validation Runs, Repair Tasks, Context Packs, Outline
+Revisions, Style Guide / Sample approvals, Style Validation
+reports, review-queue decisions, and Worker jobs are not Canon
+writes. Scene Draft jobs still accept the 3.4 static fixture id or
+a frozen assembler pack. There is no chapter-level or book-level
+generate entrance and no chapter-level Context Pack. No production
+seed-status route. Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -73,6 +78,10 @@ from slove_context.context_pack.repository import (
     InMemoryContextPackRepository,
 )
 from slove_context.context_pack.routes import router as context_pack_router
+from slove_context.jobs.deps import services_from_state
+from slove_context.jobs.repository import InMemoryJobRepository, JobRepository
+from slove_context.jobs.routes import router as jobs_router
+from slove_context.jobs.worker import Worker
 from slove_context.llm.fake import FakeProvider
 from slove_context.llm.gateway import LlmGateway
 from slove_context.logging import configure_json_logging
@@ -152,6 +161,7 @@ def create_app(
     style_repository: StyleRepository | None = None,
     style_validation_repository: StyleValidationRepository | None = None,
     review_queue_repository: ReviewQueueRepository | None = None,
+    job_repository: JobRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -167,6 +177,9 @@ def create_app(
     summary_auto_run: bool = True,
     validation_auto_run: bool = True,
     style_validation_auto_run: bool = True,
+    job_auto_run: bool = False,
+    job_timeout_s: float = 30.0,
+    job_base_backoff_s: float = 0.0,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink."""
     application = FastAPI(title="slove-context", version=__version__)
@@ -206,6 +219,7 @@ def create_app(
     application.state.review_queue_repository = (
         review_queue_repository or InMemoryReviewQueueRepository()
     )
+    application.state.job_repository = job_repository or InMemoryJobRepository()
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -225,6 +239,16 @@ def create_app(
     application.state.summary_auto_run = summary_auto_run
     application.state.validation_auto_run = validation_auto_run
     application.state.style_validation_auto_run = style_validation_auto_run
+    application.state.job_auto_run = job_auto_run
+    application.state.job_timeout_s = job_timeout_s
+    application.state.job_base_backoff_s = job_base_backoff_s
+    application.state.worker = Worker(
+        job_repository=application.state.job_repository,
+        audit_writer=writer,
+        services=services_from_state(application.state),
+        timeout_s=job_timeout_s,
+        base_backoff_s=job_base_backoff_s,
+    )
     application.include_router(story_router)
     application.include_router(canon_router)
     application.include_router(scene_router)
@@ -239,6 +263,7 @@ def create_app(
     application.include_router(style_router)
     application.include_router(style_validation_router)
     application.include_router(review_queue_router)
+    application.include_router(jobs_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:
