@@ -31,14 +31,19 @@ approve a guide or authorize a sample. Approve / authorize is not Canon
 approval and does not write Canon. Frozen rows are immutable; changes
 open a new revision / new id. Scene Draft may associate an approved
 guide revision as a reference only (3.4 generate job is unchanged).
+Node 7.2: Style Validation v1 (deterministic checks + Fake Provider
+LLM check against an approved Style Guide). Findings default to
+warning / info and do not block Canon submit. Not a 5.x Validation
+Run. 3.4 generate job is unchanged.
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change, summaries,
-Validation Runs, Repair Tasks, Context Packs, Outline Revisions, and
-Style Guide / Sample approvals are not Canon. Scene Draft jobs still
-accept the 3.4 static fixture id or a frozen assembler pack. There is no
-chapter-level or book-level generate entrance and no chapter-level
-Context Pack. No style scoring (7.2). Built-in /openapi.json is kept.
+Validation Runs, Repair Tasks, Context Packs, Outline Revisions,
+Style Guide / Sample approvals, and Style Validation reports are not
+Canon. Scene Draft jobs still accept the 3.4 static fixture id or a
+frozen assembler pack. There is no chapter-level or book-level generate
+entrance and no chapter-level Context Pack. No review queue (7.3).
+Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -93,6 +98,11 @@ from slove_context.story.repository import InMemoryStoryRepository, StoryReposit
 from slove_context.story.routes import router as story_router
 from slove_context.style.repository import InMemoryStyleRepository, StyleRepository
 from slove_context.style.routes import router as style_router
+from slove_context.style_validation.repository import (
+    InMemoryStyleValidationRepository,
+    StyleValidationRepository,
+)
+from slove_context.style_validation.routes import router as style_validation_router
 from slove_context.summary.models import (
     DEFAULT_CHAPTER_TASK_TYPE as CHAPTER_SUMMARY_TASK_TYPE,
 )
@@ -128,6 +138,7 @@ def create_app(
     context_pack_repository: ContextPackRepository | None = None,
     outline_repository: OutlineRepository | None = None,
     style_repository: StyleRepository | None = None,
+    style_validation_repository: StyleValidationRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -142,6 +153,7 @@ def create_app(
     chapter_summary_task_type: str = CHAPTER_SUMMARY_TASK_TYPE,
     summary_auto_run: bool = True,
     validation_auto_run: bool = True,
+    style_validation_auto_run: bool = True,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink."""
     application = FastAPI(title="slove-context", version=__version__)
@@ -175,6 +187,9 @@ def create_app(
         outline_repository or InMemoryOutlineRepository()
     )
     application.state.style_repository = style_repository or InMemoryStyleRepository()
+    application.state.style_validation_repository = (
+        style_validation_repository or InMemoryStyleValidationRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -193,6 +208,7 @@ def create_app(
     application.state.chapter_summary_task_type = chapter_summary_task_type
     application.state.summary_auto_run = summary_auto_run
     application.state.validation_auto_run = validation_auto_run
+    application.state.style_validation_auto_run = style_validation_auto_run
     application.include_router(story_router)
     application.include_router(canon_router)
     application.include_router(scene_router)
@@ -205,6 +221,7 @@ def create_app(
     application.include_router(context_pack_router)
     application.include_router(outline_router)
     application.include_router(style_router)
+    application.include_router(style_validation_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

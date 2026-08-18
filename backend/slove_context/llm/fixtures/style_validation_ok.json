@@ -1,0 +1,11 @@
+{
+  "text": "{\"conforms\":true,\"findings\":[],\"score_version\":\"style-llm.v1\",\"imitate_living_authors\":false}",
+  "prompt_version": "style_validation.v1",
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 12,
+    "total_tokens": 28,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

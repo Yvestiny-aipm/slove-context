@@ -72,6 +72,12 @@ CHAPTER_SUMMARY_FIXTURES = {
     "chapter_summary_fail": "chapter_summary_fail.json",
 }
 
+# Node 7.2 Style Validation fixtures. Placeholders, not product prose.
+STYLE_VALIDATION_FIXTURES = {
+    "style_validation": "style_validation_ok.json",
+    "style_validation_ok": "style_validation_ok.json",
+}
+
 
 class FakeProvider(Provider):
     """Deterministic in-process provider. Safe to retry: no persist side effects."""
@@ -166,6 +172,8 @@ class FakeProvider(Provider):
 
 
 def _text_fixture_name(task_type: str) -> str:
+    if task_type in STYLE_VALIDATION_FIXTURES:
+        return STYLE_VALIDATION_FIXTURES[task_type]
     if task_type in CHAPTER_SUMMARY_FIXTURES:
         return CHAPTER_SUMMARY_FIXTURES[task_type]
     if task_type in SCENE_SUMMARY_FIXTURES:
@@ -184,6 +192,8 @@ def _text_fixture_name(task_type: str) -> str:
 
 
 def _structured_fixture_name(task_type: str) -> str:
+    if task_type in STYLE_VALIDATION_FIXTURES:
+        return STYLE_VALIDATION_FIXTURES[task_type]
     if task_type in EXTRACT_CANDIDATE_FIXTURES:
         return EXTRACT_CANDIDATE_FIXTURES[task_type]
     if task_type in SCENE_PLAN_FIXTURES:

@@ -17,6 +17,8 @@ Confirming an Outline Revision is not Canon approval and does not write
 Canon.
 Approving a Style Guide or authorizing a Style Sample is not Canon
 approval and does not write Canon.
+Style Validation (7.2) writes reports only; findings do not write
+Canon and do not block Canon submit.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
@@ -95,6 +97,9 @@ _BODY_KEYS = frozenset(
         "style_sample_body",
         "正例",
         "反例",
+        "text_evidence",
+        "style_evidence",
+        "finding_evidence",
     }
 )
 
@@ -125,6 +130,8 @@ def _is_body_key(norm: str) -> bool:
     if norm in _BODY_KEYS or norm.endswith(("_body", "_prose")):
         return True
     if norm.endswith(("_examples", "_example")):
+        return True
+    if norm.endswith("_evidence") or norm == "text_evidence":
         return True
     return norm in {"正例", "反例"}
 
