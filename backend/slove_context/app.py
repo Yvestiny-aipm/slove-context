@@ -5,9 +5,10 @@ Node 1.3: request_id + JSON request-complete logs.
 Node 2.1: Story Project / Story Spec persistence APIs.
 Node 2.2: minimal Canon entities / evidence / facts API.
 Node 2.3: Canon Snapshot create / freeze / query / diff / replay.
+Node 3.1: Scene Card, in-story order, and scene dependencies.
 
-No auth, queues, or model clients. Spec approval is not Canon approval.
-No Scene Card, Context Pack, or generator.
+No auth, queues, or model clients. Spec / Scene Card approval is not
+Canon approval. No Scene Plan, Scene Draft, Context Pack, or generator.
 Built-in /openapi.json is kept.
 """
 
@@ -19,6 +20,8 @@ from slove_context.canon.repository import CanonRepository, InMemoryCanonReposit
 from slove_context.canon.routes import router as canon_router
 from slove_context.logging import configure_json_logging
 from slove_context.middleware import RequestIdMiddleware
+from slove_context.scene.repository import InMemorySceneRepository, SceneRepository
+from slove_context.scene.routes import router as scene_router
 from slove_context.story.repository import InMemoryStoryRepository, StoryRepository
 from slove_context.story.routes import router as story_router
 
@@ -29,6 +32,7 @@ def create_app(
     *,
     repository: StoryRepository | None = None,
     canon_repository: CanonRepository | None = None,
+    scene_repository: SceneRepository | None = None,
     audit_writer: AuditWriter | None = None,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink."""
@@ -36,9 +40,11 @@ def create_app(
     application.add_middleware(RequestIdMiddleware)
     application.state.repository = repository or InMemoryStoryRepository()
     application.state.canon_repository = canon_repository or InMemoryCanonRepository()
+    application.state.scene_repository = scene_repository or InMemorySceneRepository()
     application.state.audit_writer = audit_writer or AuditWriter(InMemoryAuditSink())
     application.include_router(story_router)
     application.include_router(canon_router)
+    application.include_router(scene_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:
