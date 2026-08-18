@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 2.3：Canon Snapshot 冻结与回放查询。不要启动节点 3.1（不要做 Scene Card）。不要实现 Context Pack 或生成器。不要加入向量检索或 LLM。
+一次只实现一个已冻结节点。当前节点是 3.1：Scene Card、场景顺序与依赖。不要启动节点 3.2（不要做模型网关）。不要生成 Scene Plan 或 Scene Draft。不要实现 Context Pack 或生成器。不要加入向量检索或 LLM。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、模型调用、Scene Card、Context Pack 或生成器。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、模型调用、Context Pack、生成器或节点 3.2 模型网关。
 
 ## 已冻结、默认不可改
 
@@ -141,3 +141,27 @@ cd backend && alembic upgrade head
 - 写操作走既有 `AuditWriter`（1.3），沿用默认脱敏。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1 Story Project / Spec API、节点 2.2 Canon Fact API（live `GET /canon-facts` 仍是当前 Canon）。
 - **不是** Scene Card（节点 3.1）、Context Pack、生成器、向量检索、LLM / 模型调用。
+
+## 命令示例（节点 3.1）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API，以及 Scene Card / 顺序 / 依赖（schema 校验失败、依赖未齐不得进入可生成、环依赖拒绝、故事顺序冲突、仅人工主编批准）；不连 Postgres，不调用外部模型。`make migrate` 需要本地 Postgres，建 `arcs`、`chapters`、`scenes`、`scene_dependencies`。不重建 Canon / 项目表，不建 Scene Plan / Scene Draft / 模型网关表。
+
+## 节点 3.1 边界
+
+- 最小 Scene Card 数据模型与 API：卷或弧 / 章为结构容器，场景为唯一生成单位。
+- Scene Card 载荷对照 `contracts/scene-card.schema.json`（Draft 2020-12）；非法输入 422。
+- 每场记录故事内顺序、POV、时间、地点、在场实体、起始状态、目标、冲突、预期结束状态、禁止事项。
+- 可生成是派生标志：场景卡已批准（或已发表）且全部依赖场景已批准或已发表。依赖未齐不得进入可生成。
+- 依赖图禁止成环；同一项目内故事顺序不得重复；场景不得排在其依赖之前。
+- 创建 / 改草稿 / 批准 / 设依赖写既有 `AuditWriter`。仅人工主编可批准（`X-Actor-Type: human_editor`）。无自动批准。
+- 批准 Scene Card 不是 Canon 批准，不写 Canon。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1 Story Project / Spec API、节点 2.2 Canon Fact API、节点 2.3 Snapshot / 回放 API。
+- **不是** 模型网关（节点 3.2）、Scene Plan / Scene Draft 生成、Context Pack、向量检索、LLM / 模型调用。
+- **不是** 「生成一整章」入口。
