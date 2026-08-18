@@ -6,12 +6,12 @@ Node 2.1: Story Project / Story Spec persistence APIs.
 Node 2.2: minimal Canon entities / evidence / facts API.
 Node 2.3: Canon Snapshot create / freeze / query / diff / replay.
 Node 3.1: Scene Card, in-story order, and scene dependencies.
-Node 3.2: LLM Gateway exists as an in-process Fake Provider (no generate
-HTTP, no Scene Plan job, no live vendor calls).
+Node 3.2: LLM Gateway as an in-process Fake Provider (no live vendor calls).
+Node 3.3: Scene Plan generation jobs (Fake Provider only; no Scene Draft).
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
-Canon approval. No Scene Plan, Scene Draft, Context Pack, or generator.
-Built-in /openapi.json is kept.
+Canon approval. Scene Plan is not Canon and not Scene Draft. No Context Pack
+or node 3.4 Scene Draft generator. Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -20,10 +20,18 @@ from slove_context import __version__
 from slove_context.audit import AuditWriter, InMemoryAuditSink
 from slove_context.canon.repository import CanonRepository, InMemoryCanonRepository
 from slove_context.canon.routes import router as canon_router
+from slove_context.llm.fake import FakeProvider
+from slove_context.llm.gateway import LlmGateway
 from slove_context.logging import configure_json_logging
 from slove_context.middleware import RequestIdMiddleware
 from slove_context.scene.repository import InMemorySceneRepository, SceneRepository
 from slove_context.scene.routes import router as scene_router
+from slove_context.scene_plan.models import DEFAULT_REPAIR_TASK_TYPE, DEFAULT_TASK_TYPE
+from slove_context.scene_plan.repository import (
+    InMemoryScenePlanRepository,
+    ScenePlanRepository,
+)
+from slove_context.scene_plan.routes import router as scene_plan_router
 from slove_context.story.repository import InMemoryStoryRepository, StoryRepository
 from slove_context.story.routes import router as story_router
 
@@ -35,18 +43,32 @@ def create_app(
     repository: StoryRepository | None = None,
     canon_repository: CanonRepository | None = None,
     scene_repository: SceneRepository | None = None,
+    scene_plan_repository: ScenePlanRepository | None = None,
     audit_writer: AuditWriter | None = None,
+    llm_gateway: LlmGateway | None = None,
+    scene_plan_task_type: str = DEFAULT_TASK_TYPE,
+    scene_plan_repair_task_type: str = DEFAULT_REPAIR_TASK_TYPE,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink."""
     application = FastAPI(title="slove-context", version=__version__)
     application.add_middleware(RequestIdMiddleware)
+    writer = audit_writer or AuditWriter(InMemoryAuditSink())
     application.state.repository = repository or InMemoryStoryRepository()
     application.state.canon_repository = canon_repository or InMemoryCanonRepository()
     application.state.scene_repository = scene_repository or InMemorySceneRepository()
-    application.state.audit_writer = audit_writer or AuditWriter(InMemoryAuditSink())
+    application.state.scene_plan_repository = (
+        scene_plan_repository or InMemoryScenePlanRepository()
+    )
+    application.state.audit_writer = writer
+    application.state.llm_gateway = llm_gateway or LlmGateway(
+        FakeProvider(), audit_writer=writer
+    )
+    application.state.scene_plan_task_type = scene_plan_task_type
+    application.state.scene_plan_repair_task_type = scene_plan_repair_task_type
     application.include_router(story_router)
     application.include_router(canon_router)
     application.include_router(scene_router)
+    application.include_router(scene_plan_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

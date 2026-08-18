@@ -1,8 +1,8 @@
 """HTTP routes for Scene Card / order / dependencies (node 3.1).
 
 Arcs and chapters are structure containers only. There is no
-chapter-level or book-level generate endpoint. Scene Plan / Scene Draft
-generation is node 3.3 and is not implemented.
+chapter-level or book-level generate endpoint. Scene Plan jobs are
+node 3.3. Scene Draft generation is node 3.4 and is not implemented.
 """
 
 from __future__ import annotations

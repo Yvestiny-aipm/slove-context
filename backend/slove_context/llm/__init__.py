@@ -1,6 +1,7 @@
 """Swappable LLM Gateway (node 3.2). Fake Provider only.
 
-No live vendor HTTP. No Scene Plan / Scene Draft generation job.
+No live vendor HTTP. Scene Plan jobs live in scene_plan (node 3.3) and
+call generate_structured. This package does not persist plans or drafts.
 No Canon writes. generate_* are idempotent reads with no persist side effects.
 """
 

@@ -1,0 +1,11 @@
+{
+  "text": "{\"not_a_scene_plan\":true,\"intent\":123}",
+  "prompt_version": "scene_plan.v1",
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 6,
+    "total_tokens": 26,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

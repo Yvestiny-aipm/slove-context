@@ -373,9 +373,9 @@ def test_arcs_and_chapters_are_not_generation_units() -> None:
 
 def test_scene_tables_migration_exists_without_recreating_canon() -> None:
     versions = ROOT / "backend" / "alembic" / "versions"
-    files = list(versions.glob("*scene*"))
-    assert files, "expected a reviewable arcs / scenes Alembic revision"
-    text = "\n".join(path.read_text(encoding="utf-8") for path in files)
+    path = versions / "005_create_scene_tables.py"
+    assert path.is_file(), "expected a reviewable arcs / scenes Alembic revision"
+    text = path.read_text(encoding="utf-8")
     assert "CREATE TABLE arcs" in text
     assert "CREATE TABLE chapters" in text
     assert "CREATE TABLE scenes" in text
