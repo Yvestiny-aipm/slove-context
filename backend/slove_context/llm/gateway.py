@@ -89,17 +89,16 @@ class LlmGateway(Provider):
         logger: logging.Logger | None = None,
     ) -> None:
         self._provider = provider
+        self.name = provider.name
         self.policy = policy or RetryPolicy()
         self._audit_writer = audit_writer
         self._sleep = sleep or time.sleep
         self._logger = logger or get_llm_logger()
 
-    @property
-    def name(self) -> str:
-        return self._provider.name
-
     def generate_text(self, request: GenerateRequest) -> GenerateResponse:
-        return self._run_generate("generate_text", self._provider.generate_text, request)
+        return self._run_generate(
+            "generate_text", self._provider.generate_text, request
+        )
 
     def generate_structured(self, request: GenerateRequest) -> GenerateResponse:
         return self._run_generate(
@@ -149,7 +148,9 @@ class LlmGateway(Provider):
                 last_error = exc
                 retryable = _is_retryable_exception(exc)
                 if retryable and attempt < max_attempts:
-                    self._log_attempt(operation, request, request_id, attempt, error=exc)
+                    self._log_attempt(
+                        operation, request, request_id, attempt, error=exc
+                    )
                     self._sleep(backoff_delay_s(attempt, self.policy))
                     continue
                 if retryable:
@@ -157,12 +158,16 @@ class LlmGateway(Provider):
                         f"{operation} failed after {attempt} attempt(s)"
                     )
                     exhausted.__cause__ = exc
-                    self._finish(operation, request, request_id, attempt, error=exhausted)
+                    self._finish(
+                        operation, request, request_id, attempt, error=exhausted
+                    )
                     raise exhausted from exc
                 self._finish(operation, request, request_id, attempt, error=exc)
                 raise
 
-            if response.error is not None and _is_retryable_error_code(response.error.code):
+            if response.error is not None and _is_retryable_error_code(
+                response.error.code
+            ):
                 last_error = ProviderTransientError(response.error.code)
                 if attempt < max_attempts:
                     self._log_attempt(
@@ -236,7 +241,9 @@ class LlmGateway(Provider):
         response: GenerateResponse | None = None,
         error: BaseException | None = None,
     ) -> None:
-        payload = redact_llm(_finish_payload(operation, request, request_id, attempt, response, error))
+        payload = redact_llm(
+            _finish_payload(operation, request, request_id, attempt, response, error)
+        )
         self._logger.info("llm generate complete", extra={"log_payload": payload})
         if self._audit_writer is None:
             return
@@ -279,7 +286,9 @@ def _finish_payload(
         payload["usage"] = response.usage.to_dict()
         payload["latency_ms"] = response.latency_ms
         payload["raw_response_reference"] = response.raw_response_reference
-        payload["error"] = response.error.to_dict() if response.error is not None else None
+        payload["error"] = (
+            response.error.to_dict() if response.error is not None else None
+        )
     if error is not None:
         payload["error"] = {"code": type(error).__name__, "message": str(error)}
     return payload
@@ -289,7 +298,9 @@ def _is_write_operation(operation: str) -> bool:
     norm = operation.strip().lower().replace("-", "_")
     if norm in WRITE_OPERATIONS:
         return True
-    return any(token in norm for token in ("write", "persist", "commit", "approve", "save"))
+    return any(
+        token in norm for token in ("write", "persist", "commit", "approve", "save")
+    )
 
 
 def _is_retryable_exception(exc: BaseException) -> bool:

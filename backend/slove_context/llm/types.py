@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, fields
 from typing import Any
 
-
 REQUEST_REQUIRED_FIELDS = (
     "model",
     "system_prompt",

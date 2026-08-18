@@ -82,7 +82,13 @@ def _is_secret_key(norm: str) -> bool:
     return any(norm.endswith(suffix) for suffix in _SECRET_SUFFIXES)
 
 
+# Version id / token count — not Prompt text. Node 3.2 records these.
+_PROMPT_METADATA_KEYS = frozenset({"prompt_version", "prompt_tokens"})
+
+
 def _is_prompt_key(norm: str) -> bool:
+    if norm in _PROMPT_METADATA_KEYS:
+        return False
     return norm in _PROMPT_KEYS or "prompt" in norm
 
 

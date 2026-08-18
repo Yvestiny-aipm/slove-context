@@ -13,13 +13,22 @@ from uuid import uuid4
 
 from slove_context.llm.errors import StructuredParseError
 from slove_context.llm.provider import Provider
-from slove_context.llm.types import GenerateError, GenerateRequest, GenerateResponse, Usage
+from slove_context.llm.types import (
+    GenerateError,
+    GenerateRequest,
+    GenerateResponse,
+    Usage,
+)
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
 TEXT_TASK_TYPES = frozenset({"text", "echo", "fixture_text"})
-STRUCTURED_OK_TASK_TYPES = frozenset({"structured", "structured_ok", "fixture_structured"})
-STRUCTURED_INVALID_TASK_TYPES = frozenset({"structured_invalid", "fixture_structured_invalid"})
+STRUCTURED_OK_TASK_TYPES = frozenset(
+    {"structured", "structured_ok", "fixture_structured"}
+)
+STRUCTURED_INVALID_TASK_TYPES = frozenset(
+    {"structured_invalid", "fixture_structured_invalid"}
+)
 
 
 class FakeProvider(Provider):
@@ -58,7 +67,7 @@ class FakeProvider(Provider):
         path = self._fixtures_dir / filename
         payload = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
-            raise ValueError(f"fixture {filename} must be a JSON object")
+            raise TypeError(f"fixture {filename} must be a JSON object")
         return payload
 
     def _response(

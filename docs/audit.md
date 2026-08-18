@@ -56,7 +56,7 @@ FastAPI 本节点仍不打开数据库会话，也不写业务表。
 | 类别 | 判定（键名，大小写不敏感；`-` 视为 `_`） | 落库 / 日志中的形态 |
 | --- | --- | --- |
 | 密钥 / key | `api_key`、`secret`、`password`、`token`、`authorization`、`model_api_key` 等；或以 `_key` / `_secret` / `_token` / `_password` / `_credential` 结尾 | 固定字符串 `[REDACTED]` |
-| Prompt | `prompt`、`system_prompt`、`user_prompt`、`model_prompt` 等，或键名含 `prompt` | 只存引用：`{"redacted": true, "kind": "prompt", "ref": "prompt:<sha256 前 16 位>"}` |
+| Prompt | `prompt`、`system_prompt`、`user_prompt`、`model_prompt` 等，或键名含 `prompt`（`prompt_version` / `prompt_tokens` 是版本号与计数，不是 Prompt 正文，不按正文脱敏） | 只存引用：`{"redacted": true, "kind": "prompt", "ref": "prompt:<sha256 前 16 位>"}` |
 | 正文 / 散文 | `body`、`prose`、`scene_draft`、`story_body` 等 | 只存引用：`{"redacted": true, "kind": "body", "ref": "body:<sha256 前 16 位>"}` |
 
 嵌套 dict / list 会递归处理。引用 id 用于对照，不还原原文。

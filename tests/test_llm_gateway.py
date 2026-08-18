@@ -14,7 +14,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 from slove_context.app import app
 from slove_context.audit import AuditWriter, InMemoryAuditSink
 from slove_context.llm.errors import (
@@ -302,6 +301,7 @@ def test_audit_written_once_after_retries_and_redacts_prompt() -> None:
     assert after["system_prompt"]["redacted"] is True
     assert after["system_prompt"]["ref"].startswith("prompt:")
     assert after["usage"]["prompt_tokens"] == 1
+    assert after["prompt_version"] == "fake-v1"
     assert after["raw_response_reference"] == "scripted:ok"
     assert "FAKE_TEXT_FIXTURE" not in dumped
 
@@ -342,6 +342,8 @@ def test_redact_llm_reuses_audit_policy_for_parsed_output() -> None:
             "parsed_output": PROSE_MARK,
             "api_key": "sk-example-not-real",
             "raw_response_reference": "fake:ref:1",
+            "prompt_version": "fake-v1",
+            "usage": {"prompt_tokens": 10, "completion_tokens": 4},
         }
     )
     dumped = json.dumps(redacted, ensure_ascii=False)
@@ -350,6 +352,8 @@ def test_redact_llm_reuses_audit_policy_for_parsed_output() -> None:
     assert redacted["api_key"] == "[REDACTED]"
     assert redacted["raw_response_reference"] == "fake:ref:1"
     assert redacted["parsed_output"]["kind"] == "body"
+    assert redacted["prompt_version"] == "fake-v1"
+    assert redacted["usage"]["prompt_tokens"] == 10
 
 
 def test_llm_package_has_no_vendor_http_or_scene_plan_job() -> None:
