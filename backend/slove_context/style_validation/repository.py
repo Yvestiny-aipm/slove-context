@@ -18,6 +18,8 @@ class StyleValidationRepository(Protocol):
         self, project_id: str, scene_id: str, draft_revision_id: str
     ) -> list[StyleValidation]: ...
 
+    def list_for_project(self, project_id: str) -> list[StyleValidation]: ...
+
 
 class InMemoryStyleValidationRepository:
     """Fake repository for API tests. Does not open Postgres."""
@@ -47,5 +49,10 @@ class InMemoryStyleValidationRepository:
             and item.scene_id == scene_id
             and item.draft_revision_id == draft_revision_id
         ]
+        items.sort(key=lambda item: (item.created_at, item.id))
+        return items
+
+    def list_for_project(self, project_id: str) -> list[StyleValidation]:
+        items = [item for item in self.runs.values() if item.project_id == project_id]
         items.sort(key=lambda item: (item.created_at, item.id))
         return items

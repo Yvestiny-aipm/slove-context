@@ -20,6 +20,10 @@ class ValidationRepository(Protocol):
 
     def get_report_for_run(self, run_id: str) -> ValidationReport | None: ...
 
+    def list_reports(self, project_id: str) -> list[ValidationReport]: ...
+
+    def list_runs(self, project_id: str) -> list[ValidationRun]: ...
+
 
 class InMemoryValidationRepository:
     """Fake repository for API tests. Does not open Postgres."""
@@ -52,3 +56,15 @@ class InMemoryValidationRepository:
             return None
         matches.sort(key=lambda item: item.created_at)
         return matches[-1]
+
+    def list_reports(self, project_id: str) -> list[ValidationReport]:
+        items = [
+            item for item in self.reports.values() if item.project_id == project_id
+        ]
+        items.sort(key=lambda item: (item.created_at, item.id))
+        return items
+
+    def list_runs(self, project_id: str) -> list[ValidationRun]:
+        items = [item for item in self.runs.values() if item.project_id == project_id]
+        items.sort(key=lambda item: (item.created_at, item.id))
+        return items

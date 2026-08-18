@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 9.2：实验运行与基线对比（仅 Fake Provider / 内存仓库）。不要启动节点 9.3。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。不要改写 9.1 expected 答案。风格发现默认不阻断 Canon 提交。
+一次只实现一个已冻结节点。当前节点是 9.3：发布门与全书导出（仅确定性检查 / 内存夹具）。不要启动节点 10.x。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。不要改写 9.1 expected 答案。不要改写 9.2 历史实验对比语义。风格发现默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
-不要把未实现行为写成已完成。不要发明已落地的鉴权、9.3 发布门、真实模型调用或生成器。节点 9.2 只做钉死 9.1 案例上的实验运行与基线对比。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。canon_commit 仅在人类批准后调用既有 4.2 submit。评测 runner 与实验运行不得写 Canon、不得批准。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、10.x、真实模型调用或生成器。节点 9.3 只做发布检查与导出已批准草稿。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。canon_commit 仅在人类批准后调用既有 4.2 submit。评测 runner、实验运行与发布检查不得写 Canon、不得批准。
 
 ## 已冻结、默认不可改
 
@@ -649,3 +649,26 @@ cd backend && alembic upgrade head
 - 写既有 `AuditWriter`，沿用 1.3 脱敏；完整 Prompt / 散文 / 正例 / 反例 / `text_evidence` 不得入审计。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–9.1 API。
 - **不是** 节点 9.3 发布门 / 全书导出、自动批准、向量检索、真实模型供应商客户端、改 5.x 硬规则、改 3.4 生成作业、改写 9.1 expected 答案。
+
+## 命令示例（节点 9.3）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限、单场景 DAG、批量调度、叙事一致性评测、实验运行与基线对比，以及发布门 / 全书导出（八项检查可单独失败、全部通过才正式导出、Manifest 不可变、失败列表机器可读、发布路径不写 Canon / 不批准、2.1–9.2 API 仍在、无生产 seed-status、9.1 expected 与 9.2 历史语义未被改写）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `release_checks`、`release_manifests`、`release_exports`、`release_due_items`、`release_waivers`、`release_safety_checks`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide / Style Validation / 审校队列 / jobs / Agent / DAG / 调度 / 实验表，不建 10.x / 真实模型网关表。
+
+## 节点 9.3 边界
+
+- 输入：已有已批准 Scene Draft、Validation / Repair、Candidate Change 提交或拒绝、冻结 Canon Snapshot、Chapter Summary、Style Validation、审计轨迹，以及最小伏笔 due-item / 安全占位。
+- 八项预发布门必须全部跑完：草稿人类批准、无未处理 blocker/error 违规、已批准候选均已 Submitted 或 Rejected、Snapshot 已冻结、目标章摘要已生成、到期伏笔已处理或人类豁免、风格与安全检查有记录、审计可回放。缺一门即失败。
+- 全部通过才写不可变 Release Manifest（版本引用、模型 / Prompt / 规则版本、人类批准记录、汇总；内容哈希；禁止就地 PATCH）。
+- 正式导出（Markdown / JSON / 审校包）只复制已批准草稿，不生成新散文。任一失败返回机器可读失败列表并禁止正式导出。失败检查可保留，但不是正式发布。
+- 发布路径 **不得**写 Canon，**不得**批准，**不得**自动发表草稿，**不得**调用真实模型或真实安全供应商。
+- 失败 / 取消保留记录，不删除。无生产 seed-status。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；完整 Prompt / 散文 / 正例 / 反例 / `text_evidence` 不得入审计。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–9.2 API。
+- **不是** 节点 10.x、自动批准、向量检索、真实模型供应商客户端、改 5.x 硬规则、改 3.4 生成作业、改写 9.1 expected 答案、改写 9.2 历史实验对比。

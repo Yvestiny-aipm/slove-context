@@ -63,8 +63,9 @@ alert on budget or consecutive failures. dry-run does not call
 the model. No auto Canon approve.
 Node 9.1: narrative consistency eval dataset and deterministic
 runner (no HTTP). Node 9.2: Experiment Run + baseline compare
-on the pinned 9.1 cases (Fake Provider only). Not a 9.3
-release gate. Experiments do not write Canon or approve.
+on the pinned 9.1 cases (Fake Provider only). Node 9.3: release
+gates and formal book export (read-only checks; no new prose).
+Release does not write Canon or approve.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -122,6 +123,11 @@ from slove_context.outline.repository import (
     OutlineRepository,
 )
 from slove_context.outline.routes import router as outline_router
+from slove_context.release.repository import (
+    InMemoryReleaseRepository,
+    ReleaseRepository,
+)
+from slove_context.release.routes import router as release_router
 from slove_context.repair.repository import (
     InMemoryRepairRepository,
     RepairRepository,
@@ -202,6 +208,7 @@ def create_app(
     dag_repository: DagRepository | None = None,
     schedule_repository: ScheduleRepository | None = None,
     experiment_repository: ExperimentRepository | None = None,
+    release_repository: ReleaseRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -271,6 +278,9 @@ def create_app(
     application.state.experiment_repository = (
         experiment_repository or InMemoryExperimentRepository()
     )
+    application.state.release_repository = (
+        release_repository or InMemoryReleaseRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -320,6 +330,7 @@ def create_app(
     application.include_router(dags_router)
     application.include_router(scheduler_router)
     application.include_router(experiments_router)
+    application.include_router(release_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:
