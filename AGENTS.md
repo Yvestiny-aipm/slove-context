@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 6.2：Outline Revision（仅 Fake / 内存仓库）。不要启动节点 7.x。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 7.1：Style Guide / Style Sample（仅 Fake / 内存仓库）。不要启动节点 7.2（不要实现风格打分 / 查重）。不要启动节点 7.3。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要抽取候选。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用或生成器。节点 6.2 只做 Outline Revision。确认可用不是批准，不写 Canon。大纲不是生成单位。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、风格打分或生成器。节点 7.1 只做版本化 Style Guide / Style Sample。批准风格资产不是 Canon 批准，不写 Canon。
 
 ## 已冻结、默认不可改
 
@@ -416,3 +416,30 @@ cd backend && alembic upgrade head
 - 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–6.1 API。
 - **不是** 节点 7.x、自动批准、向量检索、真实模型供应商客户端、章级或全书级生成。
+
+## 命令示例（节点 7.1）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision，以及 Style Guide / Style Sample（创建草稿、仅人工主编批准 / 授权、未批准 / 未授权 / 版本不匹配不得引用、批准不是 Canon 写入、已批准禁止就地改、失败 / 取消不删除、2.1–6.2 API 仍在）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `style_guides`、`style_samples`，并在 `scene_drafts` 上增量加风格引用列。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline 表，不建风格打分 / 审校队列 / 真实模型网关表。
+
+## 节点 7.1 边界
+
+- 输入：唯一故事项目上的 Style Guide / Style Sample 草稿。
+- Style Guide 字段至少含 POV、人称、时态、叙述距离、语气、节奏、对话规则、词汇偏好、禁用表达、正例、反例。
+- Style Sample 必须含来源、版权 / 授权标记、使用范围、批准状态。
+- 仅人工主编可批准 Style Guide 或授权 Sample（`X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent 不可（403）。
+- 批准 / 授权后冻结：不得就地改。改动必须出新 Revision / 新 id。
+- 使用风格（含场景草稿关联）只能引用已批准 Style Guide 与已授权 Sample。未批准、未授权、版本不匹配（引用已被覆盖或非当前已批准修订）一律拒绝。
+- Scene Draft 可关联所用 Style Guide 修订（仅引用）。不改 3.4 生成作业 / Fake Provider Prompt 逻辑。
+- 批准风格资产不是 Canon 批准，不写 Canon。
+- 失败 / 取消保留记录，不删除。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；正例 / 反例 / 样本正文不得入审计。
+- 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–6.2 API。
+- **不是** 节点 7.2 风格打分 / 查重、节点 7.3、自动批准、向量检索、真实模型供应商客户端。

@@ -142,6 +142,34 @@ def test_redact_direct_secret_prompt_and_body() -> None:
     assert "残玉只能由林晚触活" not in json.dumps(result, ensure_ascii=False)
 
 
+def test_redact_style_examples_and_sample_body() -> None:
+    result = redact(
+        {
+            "positive_examples": ["她把残玉握进掌心，河风贴着腕骨过去。"],
+            "negative_examples": ["路人也能触活残玉。"],
+            "正例": "她低声说，祠门不该在夜里开。",
+            "反例": "哇塞这玉也太酷了吧！",
+            "sample_body": "河滩泥凉，林晚蹲下去。",
+            "sample_text": "完整样本正文不得入审计",
+            "keep": "style_guide",
+        }
+    )
+    dumped = json.dumps(result, ensure_ascii=False)
+    assert result["positive_examples"]["redacted"] is True
+    assert result["negative_examples"]["redacted"] is True
+    assert result["正例"]["redacted"] is True
+    assert result["反例"]["redacted"] is True
+    assert result["sample_body"]["redacted"] is True
+    assert result["sample_text"]["redacted"] is True
+    assert result["keep"] == "style_guide"
+    assert "残玉握进掌心" not in dumped
+    assert "路人也能触活" not in dumped
+    assert "祠门不该" not in dumped
+    assert "太酷了" not in dumped
+    assert "河滩泥凉" not in dumped
+    assert "完整样本正文" not in dumped
+
+
 def test_audit_events_migration_defines_required_columns() -> None:
     versions = ROOT / "backend" / "alembic" / "versions"
     files = list(versions.glob("*audit_events*.py"))

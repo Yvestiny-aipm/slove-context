@@ -79,6 +79,9 @@ class SceneDraft:
     context_pack_id: str
     created_at: str
     created_by: str
+    # Node 7.1 reference only. Generate job (3.4) does not set these.
+    style_guide_revision_id: str | None = None
+    style_sample_ids: list[str] = field(default_factory=list)
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
@@ -102,6 +105,8 @@ class SceneDraft:
                 "snapshot_id": self.snapshot_id,
                 "context_pack_id": self.context_pack_id,
             },
+            "style_guide_revision_id": self.style_guide_revision_id,
+            "style_sample_ids": list(self.style_sample_ids),
             "is_canon": False,
             "is_approved": False,
             "is_published": False,
@@ -128,6 +133,8 @@ class SceneDraft:
             "plan_id": self.plan_id,
             "snapshot_id": self.snapshot_id,
             "context_pack_id": self.context_pack_id,
+            "style_guide_revision_id": self.style_guide_revision_id,
+            "style_sample_ids": list(self.style_sample_ids),
             "is_canon": False,
             "is_approved": False,
             "is_published": False,
