@@ -80,6 +80,8 @@ _BODY_KEYS = frozenset(
         "summary_text",
         "scene_summary",
         "chapter_summary",
+        "scene_draft_excerpt",
+        "statement",
     }
 )
 

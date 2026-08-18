@@ -21,12 +21,16 @@ write Canon.
 Node 5.2: Repair Task opened only from a RuleFailed Violation.
 Completed must start a 5.1 Validation Run. RecheckPassed is not
 Approval and does not write Canon.
+Node 6.1: Context Pack assembler (deterministic; one scene; Snapshot
+excerpts are read-only). Freeze is not Canon approval. There is no
+Outline (6.2).
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change, summaries,
-Validation Runs, and Repair Tasks are not Canon. There is no Context Pack
-builder — draft jobs reference a static fixture. There is no chapter-level
-prose generate entrance. Built-in /openapi.json is kept.
+Validation Runs, Repair Tasks, and Context Packs are not Canon. Scene
+Draft jobs still accept the 3.4 static fixture id or a frozen
+assembler pack. There is no chapter-level prose generate entrance
+and no chapter-level Context Pack. Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -44,6 +48,11 @@ from slove_context.candidate_change.repository import (
 from slove_context.candidate_change.routes import router as candidate_change_router
 from slove_context.canon.repository import CanonRepository, InMemoryCanonRepository
 from slove_context.canon.routes import router as canon_router
+from slove_context.context_pack.repository import (
+    ContextPackRepository,
+    InMemoryContextPackRepository,
+)
+from slove_context.context_pack.routes import router as context_pack_router
 from slove_context.llm.fake import FakeProvider
 from slove_context.llm.gateway import LlmGateway
 from slove_context.logging import configure_json_logging
@@ -101,6 +110,7 @@ def create_app(
     summary_repository: SummaryRepository | None = None,
     validation_repository: ValidationRepository | None = None,
     repair_repository: RepairRepository | None = None,
+    context_pack_repository: ContextPackRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -141,6 +151,9 @@ def create_app(
     application.state.repair_repository = (
         repair_repository or InMemoryRepairRepository()
     )
+    application.state.context_pack_repository = (
+        context_pack_repository or InMemoryContextPackRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -168,6 +181,7 @@ def create_app(
     application.include_router(summary_router)
     application.include_router(validation_router)
     application.include_router(repair_router)
+    application.include_router(context_pack_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

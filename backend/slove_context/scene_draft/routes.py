@@ -75,6 +75,9 @@ def _service(request: Request) -> SceneDraftService:
             request.app.state, "scene_draft_task_type", DEFAULT_TASK_TYPE
         ),
         auto_run=bool(getattr(request.app.state, "scene_draft_auto_run", True)),
+        context_pack_repository=getattr(
+            request.app.state, "context_pack_repository", None
+        ),
     )
 
 

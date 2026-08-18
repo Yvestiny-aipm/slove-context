@@ -150,7 +150,8 @@ def test_snapshot_routes_exist_and_21_22_health_remain() -> None:
     )
     assert "/projects/{project_id}/canon-replay" in paths
     assert "/projects/{project_id}/scene-cards" not in paths
-    assert not any("context-pack" in path or "generate" in path for path in paths)
+    assert "/projects/{project_id}/chapters/generate" not in paths
+    assert "/projects/{project_id}/chapters/{chapter_id}/context-packs" not in paths
 
 
 def test_create_then_freeze_is_read_only_and_audited() -> None:

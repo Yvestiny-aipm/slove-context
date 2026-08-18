@@ -4,7 +4,8 @@ Trigger requires:
 - an approved, generatable Scene Card
 - a valid Scene Plan (schema-valid, belongs to the scene)
 - a Canon Snapshot id
-- a pre-frozen Context Pack reference (static fixture; no builder)
+- a pre-frozen Context Pack reference (3.4 static fixture or a
+  frozen pack from the 6.1 assembler)
 
 Output is immutable Scene Draft prose (status Generated at most).
 Retry or rewrite creates a new revision. Old rows are not overwritten.
@@ -33,6 +34,8 @@ from uuid import uuid4
 from slove_context.audit import AuditWriter
 from slove_context.canon.models import CanonSnapshot
 from slove_context.canon.repository import CanonRepository
+from slove_context.context_pack.models import PACK_FROZEN
+from slove_context.context_pack.repository import ContextPackRepository
 from slove_context.llm.errors import LlmError
 from slove_context.llm.gateway import LlmGateway
 from slove_context.llm.types import GenerateRequest, GenerateResponse
@@ -103,6 +106,7 @@ class SceneDraftService:
         llm_gateway: LlmGateway,
         task_type: str = DEFAULT_TASK_TYPE,
         auto_run: bool = True,
+        context_pack_repository: ContextPackRepository | None = None,
     ) -> None:
         self._story = story_repository
         self._canon = canon_repository
@@ -113,6 +117,7 @@ class SceneDraftService:
         self._gateway = llm_gateway
         self._task_type = task_type
         self._auto_run = auto_run
+        self._context_packs = context_pack_repository
 
     def trigger_job(
         self,
@@ -481,23 +486,30 @@ class SceneDraftService:
                     "error": "context_pack_id_required",
                     "message": (
                         "A pre-frozen Context Pack reference is required. "
-                        "There is no Context Pack builder in node 3.4."
+                        "Use the static fixture id or a frozen pack "
+                        "from the node 6.1 assembler."
                     ),
                 },
             )
         pack = get_static_context_pack(cleaned)
-        if pack is None:
-            raise SceneDraftServiceError(
-                404,
-                {
-                    "error": "context_pack_not_found",
-                    "message": (
-                        "Unknown Context Pack id. Jobs must reference the "
-                        "pre-frozen static fixture."
-                    ),
-                },
-            )
-        return pack
+        if pack is not None:
+            return pack
+        if self._context_packs is not None:
+            assembled = self._context_packs.get(cleaned)
+            if assembled is not None and assembled.status == PACK_FROZEN:
+                return dict(assembled.payload)
+        raise SceneDraftServiceError(
+            404,
+            {
+                "error": "context_pack_not_found",
+                "message": (
+                    "Unknown Context Pack id. Jobs must reference the "
+                    "pre-frozen static fixture or a frozen assembler "
+                    "pack. Unfrozen / failed / cancelled packs are "
+                    "not accepted."
+                ),
+            },
+        )
 
     def _require_project(self, project_id: str) -> None:
         if self._story.get_project(project_id) is None:
