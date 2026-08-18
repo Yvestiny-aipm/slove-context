@@ -138,7 +138,9 @@ def approve_spec(
     body: ActorBody | None = None,
 ) -> dict[str, Any]:
     try:
-        spec = _service(request).approve_spec(project_id, spec_id, _actor(request, body))
+        spec = _service(request).approve_spec(
+            project_id, spec_id, _actor(request, body)
+        )
     except StoryServiceError as exc:
         _raise(exc)
     return spec.to_public_dict()

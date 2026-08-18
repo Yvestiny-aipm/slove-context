@@ -84,9 +84,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        "ALTER TABLE story_specs DROP CONSTRAINT story_specs_current_version_fk"
-    )
+    op.execute("ALTER TABLE story_specs DROP CONSTRAINT story_specs_current_version_fk")
     op.execute("DROP TABLE story_spec_versions")
     op.execute("DROP TABLE story_specs")
     op.execute("DROP TABLE story_projects")

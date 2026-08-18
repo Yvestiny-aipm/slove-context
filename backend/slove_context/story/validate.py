@@ -26,9 +26,7 @@ def _find_contracts_dir() -> Path:
         candidate = parent / "contracts" / SCHEMA_FILENAME
         if candidate.is_file():
             return candidate.parent
-    raise FileNotFoundError(
-        f"Could not locate contracts/{SCHEMA_FILENAME} from {here}"
-    )
+    raise FileNotFoundError(f"Could not locate contracts/{SCHEMA_FILENAME} from {here}")
 
 
 @lru_cache(maxsize=1)

@@ -428,7 +428,9 @@ class StoryService:
             status=status,
             must_write=list(assembled["must_write"]),
             must_not_write=list(assembled["must_not_write"]),
-            notes=assembled.get("notes") if isinstance(assembled.get("notes"), str) else None,
+            notes=assembled.get("notes")
+            if isinstance(assembled.get("notes"), str)
+            else None,
             payload=assembled,
             created_at=created_at,
             created_by=created_by,
@@ -451,7 +453,9 @@ class StoryService:
             ) from exc
         spec.status = status
 
-    def _reject_unapproved_as_approved(self, payload: dict[str, Any], *, action: str) -> None:
+    def _reject_unapproved_as_approved(
+        self, payload: dict[str, Any], *, action: str
+    ) -> None:
         status = payload.get("status")
         if status in (SPEC_EFFECTIVE, SPEC_WRITTEN):
             raise StoryServiceError(

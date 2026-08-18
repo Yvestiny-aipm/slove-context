@@ -8,13 +8,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-
 from slove_context.app import create_app
 from slove_context.audit import AuditWriter, InMemoryAuditSink
 from slove_context.story.repository import InMemoryStoryRepository
 
 ROOT = Path(__file__).resolve().parents[1]
-HUMAN = {"X-Actor-Type": "human_editor", "X-Actor-Id": "主编"}
+HUMAN = {"X-Actor-Type": "human_editor", "X-Actor-Id": "editor-1"}
 VALID_SPEC = {
     "title": "青石夜祠",
     "language": "zh-CN",
@@ -44,7 +43,9 @@ def _create_project(client: TestClient) -> dict:
     return response.json()
 
 
-def _create_draft(client: TestClient, project_id: str, payload: dict | None = None) -> dict:
+def _create_draft(
+    client: TestClient, project_id: str, payload: dict | None = None
+) -> dict:
     response = client.post(
         f"/projects/{project_id}/specs",
         headers=HUMAN,
@@ -190,7 +191,9 @@ def test_unapproved_spec_cannot_be_frozen_or_treated_as_approved() -> None:
         json={**VALID_SPEC, "status": "Effective"},
     )
     assert create_effective.status_code == 422
-    assert create_effective.json()["detail"]["error"] == "unapproved_spec_cannot_be_frozen"
+    assert (
+        create_effective.json()["detail"]["error"] == "unapproved_spec_cannot_be_frozen"
+    )
     missing = client2.get(f"/projects/{project2['id']}/specs/current")
     assert missing.status_code == 404
 
@@ -207,11 +210,19 @@ def test_non_human_actors_cannot_approve() -> None:
     )
     assert submit.status_code == 200
 
-    for actor_type in ("system", "generation_agent", "review_agent", "系统", "生成 Agent"):
+    for actor_type in ("system", "generation_agent", "review_agent"):
         response = client.post(
             f"/projects/{project['id']}/specs/{spec_id}/approve",
             headers={"X-Actor-Type": actor_type, "X-Actor-Id": "bot"},
             json={},
+        )
+        assert response.status_code == 403, actor_type
+        assert response.json()["detail"]["error"] == "human_editor_required"
+
+    for actor_type in ("系统", "生成 Agent", "审校 Agent"):
+        response = client.post(
+            f"/projects/{project['id']}/specs/{spec_id}/approve",
+            json={"actor_type": actor_type, "actor_id": "bot"},
         )
         assert response.status_code == 403, actor_type
         assert response.json()["detail"]["error"] == "human_editor_required"
@@ -277,7 +288,9 @@ def test_patch_after_approval_is_rejected_and_new_draft_version_is_required() ->
     assert numbers == [1, 2]
     statuses = [item["status"] for item in versions.json()["versions"]]
     assert statuses == ["Effective", "Draft"]
-    assert any(event.action == "story_spec.create_draft_revision" for event in sink.events)
+    assert any(
+        event.action == "story_spec.create_draft_revision" for event in sink.events
+    )
 
 
 def test_writes_are_audited_and_do_not_claim_canon() -> None:
@@ -300,7 +313,9 @@ def test_writes_are_audited_and_do_not_claim_canon() -> None:
     assert "story_spec" in resource_types
     assert "canon" not in resource_types
     assert "canon_fact" not in resource_types
-    approve_events = [event for event in sink.events if event.action == "story_spec.approve"]
+    approve_events = [
+        event for event in sink.events if event.action == "story_spec.approve"
+    ]
     assert approve_events
     assert approve_events[0].actor_type == "human_editor"
     assert approve_events[0].after_json is not None
