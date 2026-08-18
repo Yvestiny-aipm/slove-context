@@ -1,0 +1,21 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "schema_version": "0.4.0",
+      "id": "91a10002-0006-4000-8000-000000000002",
+      "project_id": "11111111-1111-4111-8111-111111111111",
+      "created_at": "2026-08-18T03:00:00Z",
+      "created_by": "主编",
+      "subject": "林晚",
+      "predicate": "located_at",
+      "object": "京城驿馆",
+      "value": "京城驿馆",
+      "effective_story_time": "第一日黄昏",
+      "source_scene_id": "91a10002-0002-4000-8000-000000000002",
+      "evidence_quote": "林晚推开京城驿馆的木门",
+      "confidence": 0.9,
+      "status": "Extracted"
+    }
+  ]
+}

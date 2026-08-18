@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.4.0",
+  "id": "91a10007-0004-4000-8000-000000000007",
+  "project_id": "11111111-1111-4111-8111-111111111111",
+  "created_at": "2026-08-18T03:00:00Z",
+  "created_by": "主编",
+  "scene_id": "91a10007-0002-4000-8000-000000000007",
+  "purpose": "Validate",
+  "story_spec_id": "91a10007-0001-4000-8000-000000000007",
+  "scene_card_id": "91a10007-0003-4000-8000-000000000007",
+  "scene_draft_excerpt": "顾衡用第二主角视角看着河滩上的林晚",
+  "candidate_change_ids": [
+    "91a10007-0006-4000-8000-000000000007"
+  ],
+  "knowledge_boundaries": [
+    "林晚不知残玉能开门"
+  ],
+  "canon_excerpts": [
+    {
+      "statement": "本场仅林晚视角",
+      "source_evidence": "规格写定：禁止第二主角视角",
+      "effective_story_time": "第一日黄昏"
+    }
+  ]
+}

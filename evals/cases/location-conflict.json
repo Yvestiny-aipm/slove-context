@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "location-conflict",
+  "title": "位置冲突",
+  "difficulty": "easy",
+  "rule_category": "location_conflict",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "Canon 已固定林晚位于青石镇河滩。候选把她放到京城驿馆，同一故事时刻不能分身两地。人类主编应拒绝，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/location-conflict/story_spec.json",
+    "canon_snapshot": "evals/fixtures/location-conflict/canon_snapshot.json",
+    "scene_card": "evals/fixtures/location-conflict/scene_card.json",
+    "context_pack": "evals/fixtures/location-conflict/context_pack.json",
+    "draft": "evals/fixtures/location-conflict/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/location-conflict/candidate_changes.json",
+    "violations": "evals/expected/location-conflict/violations.json"
+  }
+}

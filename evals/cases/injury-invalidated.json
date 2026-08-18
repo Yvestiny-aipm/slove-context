@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "injury-invalidated",
+  "title": "伤势失效",
+  "difficulty": "medium",
+  "rule_category": "injury_invalidated",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "Canon 已固定林晚左腕骨折。候选写成完好无损且无愈合事件，属于伤势失效。人类主编应拒绝，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/injury-invalidated/story_spec.json",
+    "canon_snapshot": "evals/fixtures/injury-invalidated/canon_snapshot.json",
+    "scene_card": "evals/fixtures/injury-invalidated/scene_card.json",
+    "context_pack": "evals/fixtures/injury-invalidated/context_pack.json",
+    "draft": "evals/fixtures/injury-invalidated/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/injury-invalidated/candidate_changes.json",
+    "violations": "evals/expected/injury-invalidated/violations.json"
+  }
+}

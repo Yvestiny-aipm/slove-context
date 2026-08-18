@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "world-rule-violation",
+  "title": "世界规则违规",
+  "difficulty": "medium",
+  "rule_category": "world_rule_violation",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "Story Spec 禁止凡人施展御空术。候选与草稿写林晚破戒御空，属于世界规则违规。人类主编应拒绝，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/world-rule-violation/story_spec.json",
+    "canon_snapshot": "evals/fixtures/world-rule-violation/canon_snapshot.json",
+    "scene_card": "evals/fixtures/world-rule-violation/scene_card.json",
+    "context_pack": "evals/fixtures/world-rule-violation/context_pack.json",
+    "draft": "evals/fixtures/world-rule-violation/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/world-rule-violation/candidate_changes.json",
+    "violations": "evals/expected/world-rule-violation/violations.json"
+  }
+}

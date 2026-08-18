@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.4.0",
+  "id": "91a10004-0004-4000-8000-000000000004",
+  "project_id": "11111111-1111-4111-8111-111111111111",
+  "created_at": "2026-08-18T03:00:00Z",
+  "created_by": "主编",
+  "scene_id": "91a10004-0002-4000-8000-000000000004",
+  "purpose": "Validate",
+  "story_spec_id": "91a10004-0001-4000-8000-000000000004",
+  "scene_card_id": "91a10004-0003-4000-8000-000000000004",
+  "scene_draft_excerpt": "林晚抬手时腕骨完好无损",
+  "candidate_change_ids": [
+    "91a10004-0006-4000-8000-000000000004"
+  ],
+  "knowledge_boundaries": [
+    "林晚不知残玉能开门"
+  ],
+  "canon_excerpts": [
+    {
+      "statement": "林晚 injury_status 左腕骨折",
+      "source_evidence": "主编已批准：林晚左腕骨折未愈",
+      "effective_story_time": "第一日黄昏"
+    }
+  ]
+}

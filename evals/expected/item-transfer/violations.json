@@ -1,0 +1,16 @@
+{
+  "schema_version": "eval-9.1.0",
+  "items": [
+    {
+      "rule_id": "canon-active-conflict",
+      "severity": "Blocking",
+      "entity_ids": [
+        "残玉",
+        "客商"
+      ],
+      "source_evidence": "客商把残玉塞进自己袖里",
+      "canon_evidence": "残玉 held_by 林晚",
+      "recommended_action": "HumanReject"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "eval_kind": "canon_snapshot",
+  "schema_version": "eval-9.1.0",
+  "id": "91a10003-0009-4000-8000-000000000003",
+  "project_id": "11111111-1111-4111-8111-111111111111",
+  "created_at": "2026-08-18T03:00:00Z",
+  "created_by": "主编",
+  "status": "frozen",
+  "as_of_scene_seq": 2,
+  "as_of_story_time": "第一日黄昏",
+  "entities": [
+    {
+      "id": "91a10003-0007-4000-8000-000000000003",
+      "entity_type": "item",
+      "name": "残玉",
+      "created_at": "2026-08-18T03:00:00Z",
+      "created_by": "主编"
+    }
+  ],
+  "facts": [
+    {
+      "id": "91a10003-0008-4000-8000-000000000003",
+      "entity_id": "91a10003-0007-4000-8000-000000000003",
+      "predicate": "held_by",
+      "value_json": {
+        "value": "林晚"
+      },
+      "effective_story_time": "第一日黄昏",
+      "valid_from_scene_id": "91a10003-0002-4000-8000-000000000003",
+      "status": "Active",
+      "source_type": "editor",
+      "evidence_id": "91a10003-0008-4000-8000-000000000003",
+      "current_version_id": "91a10003-0008-4000-8000-000000000003"
+    }
+  ]
+}

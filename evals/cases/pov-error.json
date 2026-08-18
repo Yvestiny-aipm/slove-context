@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "pov-error",
+  "title": "POV 错误",
+  "difficulty": "easy",
+  "rule_category": "pov_error",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "规格禁止第二主角视角，本场边界是林晚。候选把叙述交给顾衡，属于 POV 错误。人类主编应拒绝，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/pov-error/story_spec.json",
+    "canon_snapshot": "evals/fixtures/pov-error/canon_snapshot.json",
+    "scene_card": "evals/fixtures/pov-error/scene_card.json",
+    "context_pack": "evals/fixtures/pov-error/context_pack.json",
+    "draft": "evals/fixtures/pov-error/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/pov-error/candidate_changes.json",
+    "violations": "evals/expected/pov-error/violations.json"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.4.0",
+  "id": "91a10006-0001-4000-8000-000000000006",
+  "project_id": "11111111-1111-4111-8111-111111111111",
+  "created_at": "2026-08-18T03:00:00Z",
+  "created_by": "主编",
+  "title": "青石夜祠",
+  "language": "zh-CN",
+  "status": "Effective",
+  "must_write": [
+    "只写林晚在青石镇的七日"
+  ],
+  "must_not_write": [
+    "禁止凡人施展御空术"
+  ],
+  "notes": "规格是编辑约束，不是 Canon。"
+}

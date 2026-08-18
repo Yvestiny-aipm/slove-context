@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "lost-foreshadowing",
+  "title": "伏笔遗失",
+  "difficulty": "hard",
+  "rule_category": "lost_foreshadowing",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "规格要求本场必须留下伏笔「河滩残玉须留微光」。草稿未写该提示，5.x 硬规则看不到 must_write 缺失。人类主编应要求重生成本场，不得把缺失当通过，更不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/lost-foreshadowing/story_spec.json",
+    "canon_snapshot": "evals/fixtures/lost-foreshadowing/canon_snapshot.json",
+    "scene_card": "evals/fixtures/lost-foreshadowing/scene_card.json",
+    "context_pack": "evals/fixtures/lost-foreshadowing/context_pack.json",
+    "draft": "evals/fixtures/lost-foreshadowing/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/lost-foreshadowing/candidate_changes.json",
+    "violations": "evals/expected/lost-foreshadowing/violations.json"
+  }
+}

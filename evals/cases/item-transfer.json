@@ -1,0 +1,20 @@
+{
+  "schema_version": "eval-9.1.0",
+  "id": "item-transfer",
+  "title": "物品转移",
+  "difficulty": "easy",
+  "rule_category": "item_transfer",
+  "expected_severity": "Blocking",
+  "human_verdict_rationale": "Canon 已固定残玉由林晚持有。候选把持有者改成客商，属于未批准的物品转移。人类主编应拒绝，不得提交 Canon。",
+  "fixtures": {
+    "story_spec": "evals/fixtures/item-transfer/story_spec.json",
+    "canon_snapshot": "evals/fixtures/item-transfer/canon_snapshot.json",
+    "scene_card": "evals/fixtures/item-transfer/scene_card.json",
+    "context_pack": "evals/fixtures/item-transfer/context_pack.json",
+    "draft": "evals/fixtures/item-transfer/draft.json"
+  },
+  "expected": {
+    "candidate_changes": "evals/expected/item-transfer/candidate_changes.json",
+    "violations": "evals/expected/item-transfer/violations.json"
+  }
+}
