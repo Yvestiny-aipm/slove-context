@@ -124,7 +124,7 @@ def _is_prompt_key(norm: str) -> bool:
 def _is_body_key(norm: str) -> bool:
     if norm in _BODY_KEYS or norm.endswith(("_body", "_prose")):
         return True
-    if norm.endswith("_examples") or norm.endswith("_example"):
+    if norm.endswith(("_examples", "_example")):
         return True
     return norm in {"正例", "反例"}
 

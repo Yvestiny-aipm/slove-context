@@ -192,9 +192,7 @@ class StyleService:
         )
         return guide
 
-    def approve_guide(
-        self, project_id: str, guide_id: str, actor: Actor
-    ) -> StyleGuide:
+    def approve_guide(self, project_id: str, guide_id: str, actor: Actor) -> StyleGuide:
         trigger = self._require_human(actor, action="approve", resource="Style Guide")
         guide = self._get_guide(project_id, guide_id)
         if guide.status != GUIDE_DRAFT:
@@ -311,9 +309,7 @@ class StyleService:
         )
         return new_guide
 
-    def cancel_guide(
-        self, project_id: str, guide_id: str, actor: Actor
-    ) -> StyleGuide:
+    def cancel_guide(self, project_id: str, guide_id: str, actor: Actor) -> StyleGuide:
         trigger = self._require_human(actor, action="cancel", resource="Style Guide")
         guide = self._get_guide(project_id, guide_id)
         if guide.status == GUIDE_CANCELLED:

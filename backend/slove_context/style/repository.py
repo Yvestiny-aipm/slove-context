@@ -53,16 +53,12 @@ class InMemoryStyleRepository:
         self.guides[guide.id] = guide
 
     def list_guides(self, project_id: str) -> list[StyleGuide]:
-        items = [
-            item for item in self.guides.values() if item.project_id == project_id
-        ]
+        items = [item for item in self.guides.values() if item.project_id == project_id]
         items.sort(key=lambda item: (-item.revision, item.created_at, item.id))
         return items
 
     def list_guides_for_lineage(self, lineage_id: str) -> list[StyleGuide]:
-        items = [
-            item for item in self.guides.values() if item.lineage_id == lineage_id
-        ]
+        items = [item for item in self.guides.values() if item.lineage_id == lineage_id]
         items.sort(key=lambda item: (item.revision, item.created_at, item.id))
         return items
 

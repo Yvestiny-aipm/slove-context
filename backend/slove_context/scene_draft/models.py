@@ -104,7 +104,6 @@ class SceneDraft:
                 "plan_id": self.plan_id,
                 "snapshot_id": self.snapshot_id,
                 "context_pack_id": self.context_pack_id,
-                "style_guide_revision_id": self.style_guide_revision_id,
             },
             "style_guide_revision_id": self.style_guide_revision_id,
             "style_sample_ids": list(self.style_sample_ids),

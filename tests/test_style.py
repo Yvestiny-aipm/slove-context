@@ -330,13 +330,9 @@ def test_non_human_cannot_approve_or_authorize() -> None:
         )
         assert denied_sample.status_code == 403, denied_sample.text
         assert denied_sample.json()["detail"]["error"] == "human_editor_required"
-    still_guide = client.get(
-        f"/projects/{project['id']}/style-guides/{guide['id']}"
-    )
+    still_guide = client.get(f"/projects/{project['id']}/style-guides/{guide['id']}")
     assert still_guide.json()["status"] == "Draft"
-    still_sample = client.get(
-        f"/projects/{project['id']}/style-samples/{sample['id']}"
-    )
+    still_sample = client.get(f"/projects/{project['id']}/style-samples/{sample['id']}")
     assert still_sample.json()["status"] == "Draft"
     assert _canon_fact_count(canon, project["id"]) == before
     actions = [event.action for event in sink.events]
@@ -558,10 +554,9 @@ def test_no_style_scoring_or_extract_or_real_model() -> None:
         client.post(f"/projects/{project['id']}/style-score", json={}).status_code
         == 404
     )
-    assert (
-        client.post(f"/projects/{project['id']}/style-guides/extract", json={}).status_code
-        in {404, 405}
-    )
+    assert client.post(
+        f"/projects/{project['id']}/style-guides/extract", json={}
+    ).status_code in {404, 405}
     paths = client.get("/openapi.json").json()["paths"]
     assert not any("seed-status" in path for path in paths)
     assert not any("style-score" in path for path in paths)

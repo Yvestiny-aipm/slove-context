@@ -284,9 +284,7 @@ def list_style_guides(request: Request, project_id: str) -> dict[str, Any]:
 
 
 @router.get("/projects/{project_id}/style-guides/{guide_id}")
-def get_style_guide(
-    request: Request, project_id: str, guide_id: str
-) -> dict[str, Any]:
+def get_style_guide(request: Request, project_id: str, guide_id: str) -> dict[str, Any]:
     try:
         guide = _service(request).get_guide(project_id, guide_id)
     except StyleServiceError as exc:
