@@ -23,8 +23,8 @@ from slove_context import __version__
 from slove_context.audit import AuditWriter, InMemoryAuditSink
 from slove_context.candidate_change.models import (
     DEFAULT_REPAIR_TASK_TYPE as EXTRACT_REPAIR_TASK_TYPE,
-    DEFAULT_TASK_TYPE as EXTRACT_TASK_TYPE,
 )
+from slove_context.candidate_change.models import DEFAULT_TASK_TYPE as EXTRACT_TASK_TYPE
 from slove_context.candidate_change.repository import (
     CandidateChangeRepository,
     InMemoryCandidateChangeRepository,
