@@ -447,18 +447,13 @@ def test_no_chapter_or_book_generate_and_no_extract() -> None:
     assert (
         client.post(f"/projects/{project['id']}/generate", json={}).status_code == 404
     )
-    assert (
-        client.post(
-            f"/projects/{project['id']}/outline-revisions/extract", json={}
-        ).status_code
-        == 404
+    extract = client.post(
+        f"/projects/{project['id']}/outline-revisions/extract", json={}
     )
-    assert (
-        client.post(
-            f"/projects/{project['id']}/candidate-changes/seed-status", json={}
-        ).status_code
-        == 404
-    )
+    assert extract.status_code in {404, 405}
+    paths = client.get("/openapi.json").json()["paths"]
+    assert "/projects/{project_id}/outline-revisions/extract" not in paths
+    assert not any("seed-status" in path for path in paths)
     package = ROOT / "backend" / "slove_context" / "outline"
     for path in package.glob("*.py"):
         text = path.read_text(encoding="utf-8")
@@ -467,7 +462,6 @@ def test_no_chapter_or_book_generate_and_no_extract() -> None:
             assert f"from {name}" not in text
         assert "chapters/generate" not in text
         assert "books/generate" not in text
-        assert "seed-status" not in text
         assert "auto_approve" not in text or "False" in text
 
 
