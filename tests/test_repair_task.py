@@ -439,6 +439,7 @@ def test_recheck_passed_is_not_approve_and_does_not_write_canon() -> None:
     facts_before = _canon_fact_count(canon, project["id"])
     run = _rule_failed_run(client, project["id"], scene["id"], candidate["id"])
     opened = _open(client, project["id"], run["id"], action="Reextract")
+    after_setup = len(sink.events)
     started = client.post(
         f"/projects/{project['id']}/repair-tasks/{opened['id']}/start",
         headers=GENERATE,
@@ -477,10 +478,11 @@ def test_recheck_passed_is_not_approve_and_does_not_write_canon() -> None:
     listed = client.get(f"/projects/{project['id']}/canon-facts")
     assert listed.status_code == 200
     assert _canon_fact_count(canon, project["id"]) == facts_before + 1
-    actions = [event.action for event in sink.events]
-    assert "candidate_change.approve" not in actions
-    assert "candidate_change.submit" not in actions
-    assert "canon_fact.create" not in actions
+    after_open = [event.action for event in sink.events[after_setup:]]
+    assert "candidate_change.approve" not in after_open
+    assert "candidate_change.submit" not in after_open
+    assert "canon_fact.create" not in after_open
+    assert "canon_fact.approve" not in after_open
     for event in sink.events:
         blob = f"{event.before_json} {event.after_json}"
         assert "伸手拾起残玉" not in blob
@@ -571,6 +573,7 @@ def test_human_reject_rejects_without_canon_and_skips_recheck() -> None:
     facts_before = _canon_fact_count(canon, project["id"])
     run = _rule_failed_run(client, project["id"], scene["id"], candidate["id"])
     opened = _open(client, project["id"], run["id"], action="HumanReject")
+    after_setup = len(sink.events)
     started = client.post(
         f"/projects/{project['id']}/repair-tasks/{opened['id']}/start",
         headers=HUMAN,
@@ -602,11 +605,12 @@ def test_human_reject_rejects_without_canon_and_skips_recheck() -> None:
     )
     assert submit.status_code == 409
     assert _canon_fact_count(canon, project["id"]) == facts_before + 1
-    actions = [event.action for event in sink.events]
-    assert "candidate_change.reject" in actions
-    assert "candidate_change.approve" not in actions
-    assert "candidate_change.submit" not in actions
-    assert "canon_fact.create" not in actions
+    repair_actions = [event.action for event in sink.events[after_setup:]]
+    assert "candidate_change.reject" in repair_actions
+    assert "candidate_change.approve" not in repair_actions
+    assert "candidate_change.submit" not in repair_actions
+    assert "canon_fact.create" not in repair_actions
+    assert "canon_fact.approve" not in repair_actions
 
 
 def test_invalid_action_and_non_human_open_are_rejected() -> None:
