@@ -276,7 +276,6 @@ def test_healthz_and_prior_apis_still_present() -> None:
     assert "/projects/{project_id}/validation-runs/{run_id}" in paths
     assert "/projects/{project_id}/validation-runs/{run_id}/cancel" in paths
     assert "/projects/{project_id}/validation-runs/{run_id}/report" in paths
-    assert "/projects/{project_id}/repair-tasks" not in paths
     assert (
         "/projects/{project_id}/candidate-changes/{candidate_id}/seed-status"
         not in paths
@@ -638,16 +637,9 @@ def test_non_human_cannot_cancel() -> None:
     assert blocked.status_code == 403
 
 
-def test_no_repair_task_or_auto_approve_routes() -> None:
+def test_no_auto_approve_or_chapter_generate_routes() -> None:
     client, _, _, _ = _client()
     project, scene, _ = _ready(client)
-    assert (
-        client.post(
-            f"/projects/{project['id']}/repair-tasks",
-            json={},
-        ).status_code
-        == 404
-    )
     assert (
         client.post(
             f"/projects/{project['id']}/scenes/{scene['id']}/repair",

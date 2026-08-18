@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 5.1：Validation Run（确定性规则；对照 Canon / Snapshot 与已写定 Story Spec）。不要启动节点 5.2（不要实现 Repair Task）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 5.2：Repair Task（仅 Fake Provider / 内存仓库）。不要启动节点 6.x（不要实现 Outline / Context Pack 组装器）。不要批准或提交 Canon。不要加入自动批准。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Repair Task、Context Pack 组装器或生成器。节点 5.1 只做 Validation Run。通过不是批准，不写 Canon。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Outline / Context Pack 组装器或生成器。节点 5.2 只做 Repair Task。修复完成不是批准，不写 Canon。再校验通过只表示可交裁决。
 
 ## 已冻结、默认不可改
 
@@ -339,4 +339,30 @@ cd backend && alembic upgrade head
 - 写既有 `AuditWriter`，沿用 1.3 脱敏。
 - 仅 Fake / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–4.3 API。
-- **不是** 节点 5.2 的 Repair Task、自动批准、Context Pack 组装器、向量检索、真实模型供应商客户端。
+- **不是** 节点 5.2 当时尚未交付的 Repair Task、自动批准、Context Pack 组装器、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 5.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run，以及 Repair Task（Fake / 内存：仅 RuleFailed / Violation 可开立、完成后必须再跑 Validation Run、RecheckPassed 不是批准且不写 Canon、再校验失败阻断批准、取消不删除、HumanReject 拒绝且不写 Canon）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `repair_tasks`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run 表，不建 Context Pack 组装 / 真实模型网关表。
+
+## 节点 5.2 边界
+
+- 输入：RuleFailed Validation Report / Violation。Passed、仅 ExecFailed、无 Violation 不得开立。
+- 状态与 0.3 对齐：Opened / InProgress / Completed / Rechecking / RecheckPassed / Failed / Cancelled / Rework。
+- `recommended_action` / `action` 仅允许：ReviseScenePlan / Regenerate / Reextract / HumanReject。
+- Completed 之后必须启动一次 5.1 Validation Run（复用现有 Validation Run 服务），不得跳过再校验。Completed → Rechecking。
+- RecheckPassed 只表示候选可经 5.1 进入 AwaitingVerdict。**不是批准**，**不写 Canon**。
+- 再校验 RuleFailed / ExecFailed 不得进入批准。失败 / 取消保留记录，不删除。
+- 可调用既有 3.3 / 3.4 / 4.1 作业做 ReviseScenePlan / Regenerate / Reextract。无整章散文生成入口。
+- HumanReject：对 FailedValidation 候选记录拒绝且不写 Canon（4.2 拒绝要求 AwaitingVerdict）。无新抽取时再校验为 N/A，仍不得批准或写 Canon。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏。
+- 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–5.1 API。
+- **不是** 节点 6.x 的 Outline / Context Pack 组装器、自动批准、向量检索、真实模型供应商客户端。

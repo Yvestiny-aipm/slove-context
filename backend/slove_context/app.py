@@ -17,13 +17,16 @@ Scene Summary recaps one existing Scene Draft. Chapter Summary rolls up
 existing Scene Summaries. Summaries are not Canon / Draft / Candidate.
 Node 5.1: Validation Run (deterministic rules; no LLM). Passed moves
 candidates to AwaitingVerdict only. It is not Approval and does not
-write Canon. No Repair Task.
+write Canon.
+Node 5.2: Repair Task opened only from a RuleFailed Violation.
+Completed must start a 5.1 Validation Run. RecheckPassed is not
+Approval and does not write Canon.
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change, summaries,
-and Validation Runs are not Canon. There is no Context Pack builder —
-draft jobs reference a static fixture. There is no chapter-level prose
-generate entrance. Built-in /openapi.json is kept.
+Validation Runs, and Repair Tasks are not Canon. There is no Context Pack
+builder — draft jobs reference a static fixture. There is no chapter-level
+prose generate entrance. Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -45,6 +48,11 @@ from slove_context.llm.fake import FakeProvider
 from slove_context.llm.gateway import LlmGateway
 from slove_context.logging import configure_json_logging
 from slove_context.middleware import RequestIdMiddleware
+from slove_context.repair.repository import (
+    InMemoryRepairRepository,
+    RepairRepository,
+)
+from slove_context.repair.routes import router as repair_router
 from slove_context.scene.repository import InMemorySceneRepository, SceneRepository
 from slove_context.scene.routes import router as scene_router
 from slove_context.scene_draft.models import DEFAULT_TASK_TYPE as DRAFT_TASK_TYPE
@@ -92,6 +100,7 @@ def create_app(
     candidate_change_repository: CandidateChangeRepository | None = None,
     summary_repository: SummaryRepository | None = None,
     validation_repository: ValidationRepository | None = None,
+    repair_repository: RepairRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -129,6 +138,9 @@ def create_app(
     application.state.validation_repository = (
         validation_repository or InMemoryValidationRepository()
     )
+    application.state.repair_repository = (
+        repair_repository or InMemoryRepairRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -155,6 +167,7 @@ def create_app(
     application.include_router(candidate_change_router)
     application.include_router(summary_router)
     application.include_router(validation_router)
+    application.include_router(repair_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

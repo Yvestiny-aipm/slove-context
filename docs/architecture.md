@@ -1,6 +1,6 @@
-# 架构（节点 1.1 骨架 + 节点 1.2 本地环境 + 节点 1.3 审计日志 + 节点 2.1 Story Project / Spec + 节点 2.2 最小 Canon + 节点 2.3 Canon Snapshot + 节点 3.1 Scene Card + 节点 3.2 LLM Gateway + 节点 3.3 Scene Plan 作业 + 节点 3.4 Scene Draft 作业 + 节点 4.1 Candidate Change 抽取作业 + 节点 4.2 人类批准与提交 Canon + 节点 4.3 Scene / Chapter 摘要 + 节点 5.1 Validation Run）
+# 架构（节点 1.1 骨架 + 节点 1.2 本地环境 + 节点 1.3 审计日志 + 节点 2.1 Story Project / Spec + 节点 2.2 最小 Canon + 节点 2.3 Canon Snapshot + 节点 3.1 Scene Card + 节点 3.2 LLM Gateway + 节点 3.3 Scene Plan 作业 + 节点 3.4 Scene Draft 作业 + 节点 4.1 Candidate Change 抽取作业 + 节点 4.2 人类批准与提交 Canon + 节点 4.3 Scene / Chapter 摘要 + 节点 5.1 Validation Run + 节点 5.2 Repair Task）
 
-本文冻结本地单体仓库的目录边界。节点 1.2 补可运行的 Postgres 与 FastAPI 健康检查。节点 1.3 只加请求 `request_id`、JSON 结构化日志、以及 `audit_events` 迁移与通用写入接口。节点 2.1 增加 Story Project / Story Spec / Revision 持久化与 API。节点 2.2 增加通用实体、证据、Canon 事实与不可变版本，以及 `canon_snapshots` 表（只建表）。节点 2.3 在该表上增加冻结 / 查询 / diff / 回放。节点 3.1 增加 Scene Card、故事内顺序与场景依赖（卷 / 章仅为结构容器）。节点 3.2 增加可替换 LLM Gateway 与仅 Fake Provider（夹具，无外部模型 HTTP）。节点 3.3 增加 Scene Plan 生成作业（仅 Fake Provider；对照 `contracts/scene-plan.schema.json`；至多一次 format repair）。节点 3.4 增加 Scene Draft 生成作业（仅 Fake Provider；不可变修订版本；预冻结 Context Pack 引用）。节点 4.1 增加 Candidate Change 抽取作业（仅 Fake Provider；对照 `contracts/candidate-change.schema.json`；每条绑定 Evidence；至多一次 format repair）。节点 4.2 增加人类主编对候选变更的批准 / 拒绝 / 提交（对照 `contracts/approval-decision.schema.json`；批准不写 Canon；提交才创建或 supersede Canon Fact）。节点 4.3 增加 Scene / Chapter 摘要作业（仅 Fake Provider；场景摘要基于已有草稿修订；章摘要由场景摘要汇总，不是整章散文生成）。节点 5.1 增加 Validation Run（确定性规则；对照 Canon / Snapshot 与已写定 Story Spec；对照 `contracts/validation-report.schema.json`；通过不是批准，不写 Canon）。  
+本文冻结本地单体仓库的目录边界。节点 1.2 补可运行的 Postgres 与 FastAPI 健康检查。节点 1.3 只加请求 `request_id`、JSON 结构化日志、以及 `audit_events` 迁移与通用写入接口。节点 2.1 增加 Story Project / Story Spec / Revision 持久化与 API。节点 2.2 增加通用实体、证据、Canon 事实与不可变版本，以及 `canon_snapshots` 表（只建表）。节点 2.3 在该表上增加冻结 / 查询 / diff / 回放。节点 3.1 增加 Scene Card、故事内顺序与场景依赖（卷 / 章仅为结构容器）。节点 3.2 增加可替换 LLM Gateway 与仅 Fake Provider（夹具，无外部模型 HTTP）。节点 3.3 增加 Scene Plan 生成作业（仅 Fake Provider；对照 `contracts/scene-plan.schema.json`；至多一次 format repair）。节点 3.4 增加 Scene Draft 生成作业（仅 Fake Provider；不可变修订版本；预冻结 Context Pack 引用）。节点 4.1 增加 Candidate Change 抽取作业（仅 Fake Provider；对照 `contracts/candidate-change.schema.json`；每条绑定 Evidence；至多一次 format repair）。节点 4.2 增加人类主编对候选变更的批准 / 拒绝 / 提交（对照 `contracts/approval-decision.schema.json`；批准不写 Canon；提交才创建或 supersede Canon Fact）。节点 4.3 增加 Scene / Chapter 摘要作业（仅 Fake Provider；场景摘要基于已有草稿修订；章摘要由场景摘要汇总，不是整章散文生成）。节点 5.1 增加 Validation Run（确定性规则；对照 Canon / Snapshot 与已写定 Story Spec；对照 `contracts/validation-report.schema.json`；通过不是批准，不写 Canon）。节点 5.2 增加 Repair Task（仅从 RuleFailed / Violation 开立；完成后必须再跑 Validation Run；RecheckPassed 不是批准，不写 Canon）。  
 不写实现细节，不把未实现行为写成已完成。术语与范围以节点 0.1–0.4 为准，本文不改写它们。
 
 ## 1. 形态
@@ -12,7 +12,7 @@
 - **自动批准不是 MVP 正常行为。**
 - **多项目不是 MVP 正常行为。**
 
-节点 1.1 提供目录与约定。节点 1.2 增加可启动的 Postgres 与仅含 `/healthz`、`/version` 的 FastAPI。节点 1.3 在其上增加请求关联、JSON 日志与审计写入框架。节点 2.1 增加唯一 Story Project 与 Story Spec 草稿 / 提交 / 人工批准 / 修订版本。节点 2.2 增加最小 Canon 读写。节点 2.3 增加 Canon Snapshot 冻结与回放查询。节点 3.1 增加 Scene Card 与场景依赖。节点 3.2 增加可替换 LLM Gateway（超时 / 退避 / 重试）与 Fake Provider。节点 3.3 增加 Scene Plan 作业（已批准且可生成的 Scene Card + 指定 Snapshot → 校验后的 Scene Plan）。节点 3.4 增加 Scene Draft 作业（已批准 Scene Card + 有效 Scene Plan + Snapshot + 预冻结 Context Pack 引用 → 不可变散文修订）。节点 4.1 增加 Candidate Change 抽取作业（已生成不可变 Scene Draft → 绑 Evidence 的候选变更；不写 Canon）。节点 4.2 增加人类批准 / 拒绝 / 提交（仅人工主编；提交才写 Canon）。节点 4.3 增加 Scene / Chapter 摘要作业（已有草稿 → 场景摘要；已有场景摘要 → 章摘要汇总；不写 Canon）。节点 5.1 增加 Validation Run（Extracted 候选 + Evidence + Canon / Snapshot + 已写定 Spec → Passed 只到 AwaitingVerdict；不写 Canon）。没有队列、真实模型客户端或鉴权。
+节点 1.1 提供目录与约定。节点 1.2 增加可启动的 Postgres 与仅含 `/healthz`、`/version` 的 FastAPI。节点 1.3 在其上增加请求关联、JSON 日志与审计写入框架。节点 2.1 增加唯一 Story Project 与 Story Spec 草稿 / 提交 / 人工批准 / 修订版本。节点 2.2 增加最小 Canon 读写。节点 2.3 增加 Canon Snapshot 冻结与回放查询。节点 3.1 增加 Scene Card 与场景依赖。节点 3.2 增加可替换 LLM Gateway（超时 / 退避 / 重试）与 Fake Provider。节点 3.3 增加 Scene Plan 作业（已批准且可生成的 Scene Card + 指定 Snapshot → 校验后的 Scene Plan）。节点 3.4 增加 Scene Draft 作业（已批准 Scene Card + 有效 Scene Plan + Snapshot + 预冻结 Context Pack 引用 → 不可变散文修订）。节点 4.1 增加 Candidate Change 抽取作业（已生成不可变 Scene Draft → 绑 Evidence 的候选变更；不写 Canon）。节点 4.2 增加人类批准 / 拒绝 / 提交（仅人工主编；提交才写 Canon）。节点 4.3 增加 Scene / Chapter 摘要作业（已有草稿 → 场景摘要；已有场景摘要 → 章摘要汇总；不写 Canon）。节点 5.1 增加 Validation Run（Extracted 候选 + Evidence + Canon / Snapshot + 已写定 Spec → Passed 只到 AwaitingVerdict；不写 Canon）。节点 5.2 增加 Repair Task（RuleFailed / Violation → 返工 → 必须再校验；不写 Canon）。没有队列、真实模型客户端或鉴权。
 
 ## 2. 目录边界
 
@@ -22,17 +22,17 @@
 | `docs/` | 已冻结范围 / 术语 / 状态机，以及本文与 `audit.md` | 不表示状态机已编码 |
 | `docs/audit.md` | 审计表、JSON 日志与脱敏策略 | 不表示已有 Context Pack 组装器 |
 | `contracts/` | 已批准 JSON Schema（节点 0.4） | 不表示已有读写这些对象的服务 |
-| `backend/` | FastAPI `/healthz`、`/version`、request_id / JSON 日志 / 审计写入，Story Project / Spec API，最小 Canon API，Canon Snapshot 冻结 / 回放，Scene Card / 顺序 / 依赖，LLM Gateway（Fake Provider），Scene Plan / Scene Draft 生成作业，Candidate Change 抽取作业，候选变更的人类批准 / 拒绝 / 提交，Scene / Chapter 摘要作业，以及 Validation Run | 无鉴权 / 队列 / 真实模型客户端；无 Context Pack 组装器 / Repair Task；单元测试用内存仓库，不连库 |
-| `backend/alembic/` | `audit_events`、Story Project / Spec 与 Canon 表的可审阅迁移；2.3 增量加 snapshot 列；3.1 建 `arcs` / `chapters` / `scenes` / `scene_dependencies`；3.3 建 `scene_plan_jobs` / `scene_plans`；3.4 建 `scene_draft_jobs` / `scene_drafts`；4.1 建 `extract_jobs` / `candidate_changes`；4.2 在 `candidate_changes` 上增量加批准 / 提交列；4.3 建 `summary_jobs` / `scene_summaries` / `chapter_summaries`；5.1 建 `validation_runs` / `validation_reports` | 单元测试不跑迁移；不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要表；不建 Repair Task 表 |
+| `backend/` | FastAPI `/healthz`、`/version`、request_id / JSON 日志 / 审计写入，Story Project / Spec API，最小 Canon API，Canon Snapshot 冻结 / 回放，Scene Card / 顺序 / 依赖，LLM Gateway（Fake Provider），Scene Plan / Scene Draft 生成作业，Candidate Change 抽取作业，候选变更的人类批准 / 拒绝 / 提交，Scene / Chapter 摘要作业，Validation Run，以及 Repair Task | 无鉴权 / 队列 / 真实模型客户端；无 Context Pack 组装器；单元测试用内存仓库，不连库 |
+| `backend/alembic/` | `audit_events`、Story Project / Spec 与 Canon 表的可审阅迁移；2.3 增量加 snapshot 列；3.1 建 `arcs` / `chapters` / `scenes` / `scene_dependencies`；3.3 建 `scene_plan_jobs` / `scene_plans`；3.4 建 `scene_draft_jobs` / `scene_drafts`；4.1 建 `extract_jobs` / `candidate_changes`；4.2 在 `candidate_changes` 上增量加批准 / 提交列；4.3 建 `summary_jobs` / `scene_summaries` / `chapter_summaries`；5.1 建 `validation_runs` / `validation_reports`；5.2 建 `repair_tasks` | 单元测试不跑迁移；不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run 表；不建 Context Pack 组装表 |
 | `prompts/` | 带版本号的 Scene Plan / Scene Draft / Candidate Extract / Scene Summary / Chapter Summary Prompt 模板 | 不是 Context Pack 组装 Prompt，也不是 Validate Prompt |
-| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run 的进程内测试；可收集 `contracts/` 测试 | 不需要 live Postgres；无真实模型调用；Gateway / 作业测试只用 Fake / 夹具 |
+| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task 的进程内测试；可收集 `contracts/` 测试 | 不需要 live Postgres；无真实模型调用；Gateway / 作业测试只用 Fake / 夹具 |
 | `scripts/` | 脚本目录占位 | 无业务命令 |
 | `data/` | 本地数据目录占位 | 不存放密钥、正文敏感内容或模型输出（见 `.gitignore`） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） | 无 backend 容器（可选） |
 | `.env.example` | 变量名与安全注释 | 不读取、不连接、不含真实密钥 |
 | `Makefile` | `install` / `format` / `lint` / `typecheck` / `test` | 不启动服务 |
 
-## 3. 本仓库包含（节点 1.1 + 1.2 + 1.3 + 2.1 + 2.2 + 2.3 + 3.1 + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 5.1）
+## 3. 本仓库包含（节点 1.1 + 1.2 + 1.3 + 2.1 + 2.2 + 2.3 + 3.1 + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 5.1 + 5.2）
 
 - 仓库根约定：`AGENTS.md`、`.gitignore`、`.env.example`、`Makefile`。
 - 目录占位：`backend/`、`tests/`、`scripts/`、`data/`、`prompts/`。
@@ -40,7 +40,7 @@
 - 编排：`docker-compose.yml` 启动 Postgres（healthcheck + 命名卷）。
 - FastAPI：`GET /healthz` 与 `GET /version`（保留）；请求中间件补 `request_id` 与 JSON 请求完成日志。
 - 通用 `AuditWriter` + `AuditSink`（测试用内存 sink）。写操作走该路径。
-- Alembic：`audit_events`（1.3）、`story_projects` / `story_specs` / `story_spec_versions`（2.1），`entities` / `evidence_records` / `canon_facts` / `canon_fact_versions` / `canon_snapshots`（2.2），`canon_snapshots` 增量列（2.3），`arcs` / `chapters` / `scenes` / `scene_dependencies`（3.1），`scene_plan_jobs` / `scene_plans`（3.3），`scene_draft_jobs` / `scene_drafts`（3.4），`extract_jobs` / `candidate_changes`（4.1；并允许草稿状态 `Extracted`），`candidate_changes` 批准裁决 / 提交事实引用列（4.2），`summary_jobs` / `scene_summaries` / `chapter_summaries`（4.3），以及 `validation_runs` / `validation_reports`（5.1；违规嵌入报告 JSON）手写迁移。
+- Alembic：`audit_events`（1.3）、`story_projects` / `story_specs` / `story_spec_versions`（2.1），`entities` / `evidence_records` / `canon_facts` / `canon_fact_versions` / `canon_snapshots`（2.2），`canon_snapshots` 增量列（2.3），`arcs` / `chapters` / `scenes` / `scene_dependencies`（3.1），`scene_plan_jobs` / `scene_plans`（3.3），`scene_draft_jobs` / `scene_drafts`（3.4），`extract_jobs` / `candidate_changes`（4.1；并允许草稿状态 `Extracted`），`candidate_changes` 批准裁决 / 提交事实引用列（4.2），`summary_jobs` / `scene_summaries` / `chapter_summaries`（4.3），`validation_runs` / `validation_reports`（5.1；违规嵌入报告 JSON），以及 `repair_tasks`（5.2）手写迁移。
 - Story Project / Story Spec API：创建唯一项目、创建草稿、读取、提交写定、仅人工主编批准、列 Revision、批准后以新草稿 Revision 改写。对照 `contracts/story-spec.schema.json`。
 - 最小 Canon API：通用实体、证据、Canon 事实创建（NotInCanon）、仅人工主编批准 / 废弃 / supersede、按项目 / 实体 / 谓语 / 故事时间查询生效的 Active 事实。事实只追加，禁止就地改 Active 正文。
 - Canon Snapshot API：按场景序号和/或故事时间创建快照并捕获当时可见的 Active 事实；仅人工主编冻结；按 snapshot_id 查询；两快照 diff（稳定排序）；回放查询。快照不代替当前 Canon。
@@ -51,14 +51,15 @@
 - Candidate Change 抽取作业：已生成且不可变的 Scene Draft；`prompts/extract_candidates.v1.md`；对照 `contracts/candidate-change.schema.json`；每条绑定 Evidence；初始状态仅 Extracted；schema 失败至多一次 format repair；追加抽取批次；抽取不写 Canon、不批准、不做 Validate。
 - Candidate Change 人类批准 / 提交：对照 `contracts/approval-decision.schema.json`；仅人工主编；Approve 只记录裁决；Reject 不写 Canon；Submit 才创建或 supersede Canon Fact；候选不变成事实；无自动批准。
 - Scene / Chapter 摘要作业：Scene Summary 基于已有不可变 Scene Draft 修订（revision id + content hash）；Chapter Summary 由该章已有 Scene Summary 汇总，不是一次生成整章散文；`prompts/scene_summary.v1.md` / `prompts/chapter_summary.v1.md`；修订不可变；不写 Canon、不自动批准、不当作 Candidate Change。
-- Validation Run：已抽取且绑 Evidence 的候选 + 当前 Canon 或指定 Snapshot + 已写定 / 生效 Story Spec；确定性规则（Active 事实冲突、规格 forbid-list）；对照 `contracts/validation-report.schema.json`。Passed 只把候选送到 AwaitingVerdict。RuleFailed / ExecFailed 不得进入批准。作业不写 Canon。无自动批准。无 Repair Task。
-- 进程内测试：`/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run（以及已有的 contracts 校验）。不连 Postgres，不调用真实模型。
+- Validation Run：已抽取且绑 Evidence 的候选 + 当前 Canon 或指定 Snapshot + 已写定 / 生效 Story Spec；确定性规则（Active 事实冲突、规格 forbid-list）；对照 `contracts/validation-report.schema.json`。Passed 只把候选送到 AwaitingVerdict。RuleFailed / ExecFailed 不得进入批准。作业不写 Canon。无自动批准。
+- Repair Task：仅从 RuleFailed Validation Report / Violation 开立；完成后必须再跑 5.1 Validation Run；RecheckPassed 不是批准，不写 Canon。HumanReject 拒绝 FailedValidation 候选且不写 Canon；无新抽取时再校验为 N/A。可调用既有 3.3 / 3.4 / 4.1 作业。无整章散文生成。
+- 进程内测试：`/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task（以及已有的 contracts 校验）。不连 Postgres，不调用真实模型。
 
 ## 4. 本节点明确不是
 
-下列项不属于节点 5.1，不得当作本节点已交付：
+下列项不属于节点 5.2，不得当作本节点已交付：
 
-- Repair Task（5.2）、Context Pack 组装器。
+- Outline Revision（6.x）、Context Pack 组装器。
 - 把 Validate 通过写成批准，或自动 Approve / Submit / 写 Canon。
 - 把摘要写成 Canon / Scene Draft / Candidate Change，或自动批准。
 - 对 OpenAI / Anthropic 或其他供应商的真实 HTTP / SDK。
@@ -73,8 +74,9 @@
 - 用快照绕过人类批准去改当前 Canon。
 - 网关或作业把生成结果写入 Canon 或自动批准。
 - 草稿自动成为已批准或已发表。
-- 候选变更自动进入 Approved / Submitted；Passed 只到 AwaitingVerdict，不是批准。
+- 候选变更自动进入 Approved / Submitted；Passed / RecheckPassed 只到 AwaitingVerdict，不是批准。
 - 抽取作业把候选写成 Canon Fact，或改写 Scene Draft 正文。
+- 把 Repair Task 完成或 RecheckPassed 写成批准或 Canon 写入。
 
 ## 5. 与已冻结文档的关系
 
