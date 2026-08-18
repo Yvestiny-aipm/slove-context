@@ -48,7 +48,7 @@ from slove_context.scene_plan.repository import InMemoryScenePlanRepository
 from slove_context.story.repository import InMemoryStoryRepository
 
 ROOT = Path(__file__).resolve().parents[1]
-HUMAN = {"X-Actor-Type": "human_editor", "X-Actor-Id": "主编"}
+HUMAN = {"X-Actor-Type": "human_editor", "X-Actor-Id": "editor-1"}
 GENERATE = {"X-Actor-Type": "generation_agent", "X-Actor-Id": "gen-1"}
 SYSTEM = {"X-Actor-Type": "system", "X-Actor-Id": "sys-1"}
 REVIEW = {"X-Actor-Type": "review_agent", "X-Actor-Id": "rev-1"}
