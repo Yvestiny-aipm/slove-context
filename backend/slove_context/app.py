@@ -26,13 +26,19 @@ excerpts are read-only). Freeze is not Canon approval.
 Node 6.2: Outline Revision (Drafting → Proposed → Confirmed). Confirm
 usable is not Approval and does not write Canon. Outline is not a
 generation unit.
+Node 7.1: versioned Style Guide / Style Sample. Only a human 主编 may
+approve a guide or authorize a sample. Approve / authorize is not Canon
+approval and does not write Canon. Frozen rows are immutable; changes
+open a new revision / new id. Scene Draft may associate an approved
+guide revision as a reference only (3.4 generate job is unchanged).
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change, summaries,
-Validation Runs, Repair Tasks, Context Packs, and Outline Revisions are
-not Canon. Scene Draft jobs still accept the 3.4 static fixture id or a
-frozen assembler pack. There is no chapter-level or book-level generate
-entrance and no chapter-level Context Pack. Built-in /openapi.json is kept.
+Validation Runs, Repair Tasks, Context Packs, Outline Revisions, and
+Style Guide / Sample approvals are not Canon. Scene Draft jobs still
+accept the 3.4 static fixture id or a frozen assembler pack. There is no
+chapter-level or book-level generate entrance and no chapter-level
+Context Pack. No style scoring (7.2). Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -85,6 +91,8 @@ from slove_context.scene_plan.repository import (
 from slove_context.scene_plan.routes import router as scene_plan_router
 from slove_context.story.repository import InMemoryStoryRepository, StoryRepository
 from slove_context.story.routes import router as story_router
+from slove_context.style.repository import InMemoryStyleRepository, StyleRepository
+from slove_context.style.routes import router as style_router
 from slove_context.summary.models import (
     DEFAULT_CHAPTER_TASK_TYPE as CHAPTER_SUMMARY_TASK_TYPE,
 )
@@ -119,6 +127,7 @@ def create_app(
     repair_repository: RepairRepository | None = None,
     context_pack_repository: ContextPackRepository | None = None,
     outline_repository: OutlineRepository | None = None,
+    style_repository: StyleRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -165,6 +174,7 @@ def create_app(
     application.state.outline_repository = (
         outline_repository or InMemoryOutlineRepository()
     )
+    application.state.style_repository = style_repository or InMemoryStyleRepository()
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -194,6 +204,7 @@ def create_app(
     application.include_router(repair_router)
     application.include_router(context_pack_router)
     application.include_router(outline_router)
+    application.include_router(style_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:
