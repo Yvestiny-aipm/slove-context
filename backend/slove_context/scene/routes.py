@@ -2,7 +2,7 @@
 
 Arcs and chapters are structure containers only. There is no
 chapter-level or book-level generate endpoint. Scene Plan / Scene Draft
-generation and the model gateway are node 3.2 and are not implemented.
+generation is node 3.3 and is not implemented.
 """
 
 from __future__ import annotations

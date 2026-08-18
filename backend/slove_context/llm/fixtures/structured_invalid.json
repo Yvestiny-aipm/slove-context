@@ -1,0 +1,11 @@
+{
+  "text": "NOT_JSON_FIXTURE{{{",
+  "prompt_version": "fake-v1",
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 3,
+    "total_tokens": 11,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}

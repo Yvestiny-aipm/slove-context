@@ -18,6 +18,7 @@ from slove_context.audit import redact
 
 LOGGER_NAME = "slove_context"
 REQUEST_LOGGER_NAME = "slove_context.request"
+LLM_LOGGER_NAME = "slove_context.llm"
 
 _request_id_var: ContextVar[str | None] = ContextVar("slove_request_id", default=None)
 
@@ -44,6 +45,13 @@ class JsonFormatter(logging.Formatter):
         "status_code",
         "method",
         "path",
+        "correlation_id",
+        "provider",
+        "model",
+        "prompt_version",
+        "task_type",
+        "raw_response_reference",
+        "latency_ms",
     )
 
     def format(self, record: logging.LogRecord) -> str:
@@ -55,6 +63,11 @@ class JsonFormatter(logging.Formatter):
         for key in self._extra_fields:
             if hasattr(record, key):
                 payload[key] = getattr(record, key)
+        extra_payload = getattr(record, "log_payload", None)
+        if isinstance(extra_payload, dict):
+            for key, value in extra_payload.items():
+                if key not in payload:
+                    payload[key] = value
         request_id = payload.get("request_id") or get_request_id()
         if request_id:
             payload["request_id"] = request_id
@@ -75,3 +88,7 @@ def configure_json_logging() -> logging.Logger:
 
 def get_request_logger() -> logging.Logger:
     return logging.getLogger(REQUEST_LOGGER_NAME)
+
+
+def get_llm_logger() -> logging.Logger:
+    return logging.getLogger(LLM_LOGGER_NAME)
