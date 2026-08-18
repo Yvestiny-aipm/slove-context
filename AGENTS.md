@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 3.4：Scene Draft 生成作业（仅 Fake Provider）。不要启动节点 4.1（不要做自动事实抽取）。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
+一次只实现一个已冻结节点。当前节点是 4.1：Candidate Change 抽取作业（仅 Fake Provider）。不要启动节点 4.2（不要实现 Validate / Validation Run）。不要批准或提交 Canon。不要写 Scene/Chapter 摘要。不要调用任何真实模型 API。不要实现 Context Pack 组装器。不要加入向量检索。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、自动事实抽取、Context Pack 组装器或生成器。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、真实模型调用、Validate / Validation Run、Context Pack 组装器或生成器。
 
 ## 已冻结、默认不可改
 
@@ -236,3 +236,30 @@ cd backend && alembic upgrade head
 - 生成单位为单个场景。无「生成一整章」入口。无自动事实抽取（节点 4.1）。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–3.3 API。
 - **不是** 节点 4.1 的自动事实抽取、Candidate Change 作业、Context Pack 组装器、向量检索、真实模型供应商客户端。
+
+## 命令示例（节点 4.1）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业，以及 Candidate Change 抽取作业（Fake Provider：成功且绑定 Evidence、非法 JSON、schema 失败且至多一次 format repair、幂等、失败可重试、不写 Canon、无自动批准）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `extract_jobs`、`candidate_changes`，并允许 Scene Draft 状态 `Extracted`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft 表，不建 Validation Run / Context Pack 组装 / 真实模型网关表。
+
+## 节点 4.1 边界
+
+- 输入：已生成且不可变的 Scene Draft（状态至少 Generated）+ 所属 Scene / 项目。草稿缺失、未生成、可被覆盖或已替换则拒绝。
+- 输出：对照 `contracts/candidate-change.schema.json` 的候选变更列表。每条必须绑定 Evidence（`evidence_quote` + `source_scene_id`）。非法结构化输出不得作为有效候选落库。
+- 抽取单位为单个场景。草稿正文不可变；抽取只写候选，不得覆盖散文。成功时草稿状态至多 Generated → Extracted（只改状态）。
+- 候选初始状态只能是 Extracted。不得自动设 Validating / Approved / Submitted / AwaitingVerdict。
+- Prompt 模板带版本号（`prompts/extract_candidates.v1.md`）；要求 JSON 数组或对象；禁止写 Canon、禁止批准、禁止生成新散文。
+- schema 失败至多一次 format repair；仍失败则 job failed 并保留证据（request refs、raw_response_reference、校验错误）。
+- 幂等：同一 `idempotency_key` 在 queued / running / succeeded 时返回原作业；取消为终态且不删除；失败作业可再开新作业（追加抽取批次，不覆盖旧候选）。
+- 仅 Fake Provider + 夹具。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏（完整 Prompt / 散文不得入日志）。
+- Candidate Change 不是 Canon Fact。作业不写 Canon。无 Validate（4.2）、无人工批准 / 提交、无 Scene / Chapter 摘要。
+- 生成 / 抽取单位为单个场景。无「生成一整章」入口。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–3.4 API。
+- **不是** 节点 4.2 的 Validate / Validation Run、节点 4.3 的批准 / 提交、Context Pack 组装器、向量检索、真实模型供应商客户端。

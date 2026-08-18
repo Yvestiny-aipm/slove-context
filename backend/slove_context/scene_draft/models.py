@@ -36,16 +36,24 @@ JOB_STATES = frozenset(
 JOB_REUSABLE_STATES = frozenset({JOB_QUEUED, JOB_RUNNING, JOB_SUCCEEDED})
 JOB_CANCELLABLE_STATES = frozenset({JOB_QUEUED, JOB_RUNNING})
 
-# 0.3 Scene Draft subset for this node. Extracted / published / approved
-# are out of scope (no 4.1 extraction; no auto-approve; no publish).
+# 0.3 Scene Draft subset. Node 4.1 may move Generated → Extracted
+# (status only). Published / approved remain out of scope.
 DRAFT_GENERATED = "Generated"
+DRAFT_EXTRACTED = "Extracted"
 DRAFT_FAILED = "Failed"
 DRAFT_CANCELLED = "Cancelled"
 DRAFT_SUPERSEDED = "Superseded"
 
 DRAFT_STATUSES = frozenset(
-    {DRAFT_GENERATED, DRAFT_FAILED, DRAFT_CANCELLED, DRAFT_SUPERSEDED}
+    {
+        DRAFT_GENERATED,
+        DRAFT_EXTRACTED,
+        DRAFT_FAILED,
+        DRAFT_CANCELLED,
+        DRAFT_SUPERSEDED,
+    }
 )
+EXTRACTABLE_DRAFT_STATUSES = frozenset({DRAFT_GENERATED, DRAFT_EXTRACTED})
 
 DEFAULT_TASK_TYPE = "scene_draft"
 

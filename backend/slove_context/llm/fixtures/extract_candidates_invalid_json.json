@@ -1,0 +1,11 @@
+{
+  "text": "NOT_JSON_EXTRACT_CANDIDATES{{{",
+  "prompt_version": "extract_candidates.v1",
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 3,
+    "total_tokens": 27,
+    "cost_amount": 0.0,
+    "cost_currency": "USD"
+  }
+}
