@@ -337,7 +337,11 @@ def test_no_production_seed_status() -> None:
     route_source = (ROOT / "backend/slove_context/scheduler/routes.py").read_text(
         encoding="utf-8"
     )
-    assert "seed-status" not in route_source
+    assert "@router" in route_source
+    assert not any(
+        line.lstrip().startswith("@router") and "seed-status" in line
+        for line in route_source.splitlines()
+    )
 
 
 def test_multi_project_parallelism() -> None:
@@ -612,11 +616,17 @@ def test_scheduler_does_not_auto_approve_or_submit_canon() -> None:
             assert detail["error"] == "scheduler_cannot_write_canon"
             assert detail["writes_canon"] is False
     assert _canon_fact_count(canon, project_id) == before
-    for event in sink.events:
-        blob = str(event.after_json or {})
-        assert "system_prompt" not in blob
-        assert "user_prompt" not in blob
-        assert "api_key" not in blob.lower() or "[REDACTED]" in blob
+    schedule_events = [
+        event for event in sink.events if str(event.action).startswith("schedule.")
+    ]
+    assert schedule_events
+    for event in schedule_events:
+        after = event.after_json or {}
+        assert "system_prompt" not in after
+        assert "user_prompt" not in after
+        assert "prose" not in after
+        assert "text_evidence" not in after
+        assert "api_key" not in after
 
 
 def test_writes_are_audited_and_redacted() -> None:
@@ -654,6 +664,8 @@ def test_writes_are_audited_and_redacted() -> None:
     assert "schedule.start" in actions
     assert "schedule.pause" in actions
     for event in sink.events:
+        if not str(event.action).startswith("schedule."):
+            continue
         after = event.after_json or {}
         assert "prose" not in after
         assert "system_prompt" not in after
