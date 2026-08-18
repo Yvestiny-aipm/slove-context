@@ -27,13 +27,11 @@ from slove_context.candidate_change.models import (
     APPROVE_FROM,
     CANDIDATE_APPROVED,
     CANDIDATE_REJECTED,
-    CANDIDATE_STATUSES,
     CANDIDATE_SUBMITTED,
     DECISION_APPROVE,
     DECISION_REJECT,
     DEFAULT_SCHEMA_VERSION,
     REJECT_FROM,
-    SEEDABLE_STATUSES,
     SUBMIT_FROM,
     CandidateChange,
 )
@@ -49,7 +47,6 @@ from slove_context.logging import get_request_id
 from slove_context.story.actors import (
     HUMAN_EDITOR,
     NON_HUMAN_TYPES,
-    SYSTEM,
     Actor,
     ActorError,
     normalize_actor_type,
@@ -95,35 +92,6 @@ class ApprovalService:
 
     def get_candidate(self, project_id: str, candidate_id: str) -> CandidateChange:
         return self._require_candidate(project_id, candidate_id)
-
-    def seed_status(
-        self, project_id: str, candidate_id: str, status: str
-    ) -> CandidateChange:
-        """Test helper: set a status without running Validate (5.x).
-
-        Does not approve, submit, or write Canon. Extracted stays the
-        production initial status.
-        """
-        candidate = self._require_candidate(project_id, candidate_id)
-        if status not in SEEDABLE_STATUSES:
-            raise CandidateChangeServiceError(
-                422,
-                {
-                    "error": "status_not_seedable",
-                    "message": (
-                        "Tests may seed AwaitingVerdict (or other pre-verdict "
-                        "statuses) to skip Validate. Seed is not approve or "
-                        "submit and does not write Canon."
-                    ),
-                    "status": status,
-                },
-            )
-        return self._set_status(
-            candidate,
-            status,
-            actor=Actor(actor_type=SYSTEM, actor_id=None),
-            action="candidate_change.seed_status",
-        )
 
     def approve(
         self,
@@ -503,32 +471,6 @@ class ApprovalService:
                 },
             ) from exc
         return payload
-
-    def _set_status(
-        self,
-        candidate: CandidateChange,
-        status: str,
-        *,
-        actor: Actor,
-        action: str,
-    ) -> CandidateChange:
-        if status not in CANDIDATE_STATUSES:
-            raise CandidateChangeServiceError(
-                422, {"error": "invalid_status", "status": status}
-            )
-        before = candidate.to_audit_dict()
-        candidate.status = status
-        candidate.payload["status"] = status
-        self._repo.save_candidate(candidate)
-        self._write_audit(
-            actor=actor,
-            action=action,
-            resource_type="candidate_change",
-            resource_id=candidate.id,
-            before_json=before,
-            after_json=candidate.to_audit_dict(),
-        )
-        return candidate
 
     def _require_candidate(self, project_id: str, candidate_id: str) -> CandidateChange:
         self._require_project(project_id)

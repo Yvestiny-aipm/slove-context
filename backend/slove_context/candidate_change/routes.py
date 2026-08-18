@@ -80,14 +80,6 @@ class SubmitBody(BaseModel):
     supersede_fact_id: str | None = None
 
 
-class SeedStatusBody(BaseModel):
-    """Test helper only: skip Validate (5.x). Not approve or submit."""
-
-    status: str
-    actor_type: str | None = None
-    actor_id: str | None = None
-
-
 def _service(request: Request) -> CandidateChangeService:
     story: StoryRepository = request.app.state.repository
     scenes: SceneRepository = request.app.state.scene_repository
@@ -133,12 +125,7 @@ def _approval_service(request: Request) -> ApprovalService:
 
 def _actor(
     request: Request,
-    body: TriggerJobBody
-    | CancelBody
-    | DecisionBody
-    | SubmitBody
-    | SeedStatusBody
-    | None = None,
+    body: TriggerJobBody | CancelBody | DecisionBody | SubmitBody | None = None,
 ) -> Actor:
     body_type = body.actor_type if body is not None else None
     body_id = None
@@ -227,26 +214,6 @@ def get_candidate_change(
 ) -> dict[str, Any]:
     try:
         item = _approval_service(request).get_candidate(project_id, candidate_id)
-    except CandidateChangeServiceError as exc:
-        _raise(exc)
-    return item.to_public_dict()
-
-
-@router.post("/projects/{project_id}/candidate-changes/{candidate_id}/seed-status")
-def seed_candidate_status(
-    request: Request,
-    project_id: str,
-    candidate_id: str,
-    body: SeedStatusBody,
-) -> dict[str, Any]:
-    """Test/admin helper: set AwaitingVerdict (or other pre-verdict status).
-
-    Skips Validate (5.x). Does not approve, submit, or write Canon.
-    """
-    try:
-        item = _approval_service(request).seed_status(
-            project_id, candidate_id, body.status
-        )
     except CandidateChangeServiceError as exc:
         _raise(exc)
     return item.to_public_dict()

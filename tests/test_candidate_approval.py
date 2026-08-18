@@ -14,6 +14,11 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from slove_context.app import create_app
 from slove_context.audit import AuditWriter, InMemoryAuditSink
+from slove_context.candidate_change.models import (
+    CANDIDATE_APPROVED,
+    CANDIDATE_SUBMITTED,
+    SEEDABLE_STATUSES,
+)
 from slove_context.candidate_change.repository import InMemoryCandidateChangeRepository
 from slove_context.candidate_change.validate import validate_approval_decision
 from slove_context.canon.models import FACT_ACTIVE, FACT_SUPERSEDED
@@ -167,15 +172,31 @@ def _ready_extracted(client: TestClient) -> tuple[dict, dict, dict]:
 
 
 def _seed(client: TestClient, project_id: str, candidate_id: str, status: str) -> dict:
-    response = client.post(
-        f"/projects/{project_id}/candidate-changes/{candidate_id}/seed-status",
-        json={"status": status},
-    )
-    assert response.status_code == 200, response.text
-    assert response.json()["status"] == status
-    assert response.json()["is_canon"] is False
-    assert response.json()["writes_canon"] is False
-    return response.json()
+    """Test-only: skip Validate by writing the in-memory repository.
+
+    Not an HTTP route. Cannot seed Approved or Submitted.
+    """
+    if status in {CANDIDATE_APPROVED, CANDIDATE_SUBMITTED}:
+        raise AssertionError(
+            "Tests must not seed Approved or Submitted. "
+            "Those states require human approve / submit."
+        )
+    if status not in SEEDABLE_STATUSES:
+        raise AssertionError(f"Status {status!r} is not seedable in tests.")
+    repo = client.app.state.candidate_change_repository
+    item = repo.get_candidate(candidate_id)
+    assert item is not None
+    assert item.project_id == project_id
+    item.status = status
+    item.payload["status"] = status
+    repo.save_candidate(item)
+    fetched = client.get(f"/projects/{project_id}/candidate-changes/{candidate_id}")
+    assert fetched.status_code == 200, fetched.text
+    body = fetched.json()
+    assert body["status"] == status
+    assert body["is_canon"] is False
+    assert body["writes_canon"] is False
+    return body
 
 
 def _awaiting(client: TestClient) -> tuple[dict, dict, dict]:
@@ -219,11 +240,49 @@ def test_healthz_and_prior_apis_still_present() -> None:
     assert "/projects/{project_id}/candidate-changes/{candidate_id}/approve" in paths
     assert "/projects/{project_id}/candidate-changes/{candidate_id}/reject" in paths
     assert "/projects/{project_id}/candidate-changes/{candidate_id}/submit" in paths
+    assert (
+        "/projects/{project_id}/candidate-changes/{candidate_id}/seed-status"
+        not in paths
+    )
+    assert not any("seed-status" in path for path in paths)
     assert "/projects/{project_id}/chapters/generate" not in paths
     assert "/projects/{project_id}/validation-runs" not in paths
     assert "/projects/{project_id}/scenes/{scene_id}/validate" not in paths
     assert "/projects/{project_id}/scenes/{scene_id}/summary" not in paths
     assert "/projects/{project_id}/chapters/{chapter_id}/summary" not in paths
+
+
+def test_seed_status_is_not_registered_on_the_app() -> None:
+    client, _, _ = _client()
+    paths = client.get("/openapi.json").json()["paths"]
+    assert not any("seed-status" in path for path in paths)
+    project, _, candidate = _ready_extracted(client)
+    missing = client.post(
+        f"/projects/{project['id']}/candidate-changes/{candidate['id']}/seed-status",
+        headers=HUMAN,
+        json={"status": "AwaitingVerdict"},
+    )
+    assert missing.status_code == 404
+    fetched = client.get(
+        f"/projects/{project['id']}/candidate-changes/{candidate['id']}"
+    )
+    assert fetched.json()["status"] == "Extracted"
+
+
+def test_fixture_cannot_seed_approved_or_submitted() -> None:
+    client, _, _ = _client()
+    project, _, candidate = _ready_extracted(client)
+    for status in (CANDIDATE_APPROVED, CANDIDATE_SUBMITTED):
+        try:
+            _seed(client, project["id"], candidate["id"], status)
+        except AssertionError:
+            continue
+        raise AssertionError(f"must not seed {status}")
+    fetched = client.get(
+        f"/projects/{project['id']}/candidate-changes/{candidate['id']}"
+    )
+    assert fetched.json()["status"] == "Extracted"
+    assert fetched.json()["is_approved"] is False
 
 
 def test_approve_does_not_write_canon() -> None:
