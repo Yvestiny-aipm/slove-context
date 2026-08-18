@@ -42,6 +42,13 @@ SCENE_PLAN_FIXTURES = {
     "scene_plan_repair_invalid_schema": "scene_plan_repair_fail.json",
 }
 
+# Node 3.4 Scene Draft fixtures. Placeholders, not product prose.
+SCENE_DRAFT_FIXTURES = {
+    "scene_draft": "scene_draft_ok.json",
+    "scene_draft_ok": "scene_draft_ok.json",
+    "scene_draft_fail": "scene_draft_fail.json",
+}
+
 
 class FakeProvider(Provider):
     """Deterministic in-process provider. Safe to retry: no persist side effects."""
@@ -54,17 +61,22 @@ class FakeProvider(Provider):
 
     def generate_text(self, request: GenerateRequest) -> GenerateResponse:
         self.calls += 1
-        data = self._load(_text_fixture_name(request.task_type))
+        filename = _text_fixture_name(request.task_type)
+        data = self._load(filename)
+        error = _error_from_fixture(data)
+        parsed = None if error is not None else data.get("text")
         return self._response(
             request,
-            parsed_output=data["text"],
+            parsed_output=parsed,
             data=data,
-            error=None,
+            error=error,
+            fixture_name=filename,
         )
 
     def generate_structured(self, request: GenerateRequest) -> GenerateResponse:
         self.calls += 1
-        data = self._load(_structured_fixture_name(request.task_type))
+        filename = _structured_fixture_name(request.task_type)
+        data = self._load(filename)
         raw_text = data["text"]
         try:
             parsed = json.loads(raw_text)
@@ -73,10 +85,22 @@ class FakeProvider(Provider):
                 code="structured_parse_failed",
                 message="Fake Provider fixture is not valid JSON",
             )
-            return self._response(request, parsed_output=None, data=data, error=error)
+            return self._response(
+                request,
+                parsed_output=None,
+                data=data,
+                error=error,
+                fixture_name=filename,
+            )
         if not isinstance(parsed, dict):
             raise StructuredParseError("structured fixture must decode to an object")
-        return self._response(request, parsed_output=parsed, data=data, error=None)
+        return self._response(
+            request,
+            parsed_output=parsed,
+            data=data,
+            error=None,
+            fixture_name=filename,
+        )
 
     def _load(self, filename: str) -> dict[str, Any]:
         path = self._fixtures_dir / filename
@@ -92,6 +116,7 @@ class FakeProvider(Provider):
         parsed_output: Any,
         data: dict[str, Any],
         error: GenerateError | None,
+        fixture_name: str,
     ) -> GenerateResponse:
         usage_raw = data.get("usage") or {}
         usage = Usage(
@@ -102,9 +127,6 @@ class FakeProvider(Provider):
             cost_currency=str(usage_raw.get("cost_currency", "USD")),
         )
         request_id = str(uuid4())
-        fixture_name = _text_fixture_name(request.task_type)
-        if error is not None or isinstance(parsed_output, dict):
-            fixture_name = _structured_fixture_name(request.task_type)
         return GenerateResponse(
             request_id=request_id,
             provider=self.name,
@@ -119,6 +141,8 @@ class FakeProvider(Provider):
 
 
 def _text_fixture_name(task_type: str) -> str:
+    if task_type in SCENE_DRAFT_FIXTURES:
+        return SCENE_DRAFT_FIXTURES[task_type]
     if task_type in SCENE_PLAN_FIXTURES:
         return SCENE_PLAN_FIXTURES[task_type]
     if task_type in STRUCTURED_INVALID_TASK_TYPES:
@@ -134,3 +158,13 @@ def _structured_fixture_name(task_type: str) -> str:
     if task_type in STRUCTURED_INVALID_TASK_TYPES:
         return "structured_invalid.json"
     return "structured_ok.json"
+
+
+def _error_from_fixture(data: dict[str, Any]) -> GenerateError | None:
+    raw = data.get("error")
+    if not isinstance(raw, dict) or not raw.get("code"):
+        return None
+    return GenerateError(
+        code=str(raw["code"]),
+        message=str(raw.get("message") or "Fake Provider fixture error"),
+    )
