@@ -28,6 +28,9 @@ does not submit Canon.
 Agent Registry / Agent Run (8.2) writes create / start / succeed /
 fail / cancel only. No Agent writes Canon. Human Approver approve
 is not submit.
+Scene DAG (8.3) writes create / advance / human_review / rerun /
+cancel only. canon_commit reuses 4.2 human submit. The orchestrator
+does not auto-approve.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
