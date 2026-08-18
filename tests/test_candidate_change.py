@@ -233,7 +233,6 @@ def test_healthz_and_prior_apis_still_present() -> None:
     assert "/projects/{project_id}/extract-jobs/{job_id}/cancel" in paths
     assert "/projects/{project_id}/scenes/{scene_id}/candidate-changes" in paths
     assert "/projects/{project_id}/chapters/generate" not in paths
-    assert "/projects/{project_id}/validation-runs" not in paths
     assert "/projects/{project_id}/scenes/{scene_id}/validate" not in paths
     assert "/projects/{project_id}/candidate-changes/{candidate_id}/approve" in paths
     assert "/projects/{project_id}/candidate-changes/{candidate_id}/reject" in paths
@@ -656,13 +655,6 @@ def test_review_agent_cannot_trigger_and_no_validate_or_approve() -> None:
     assert (
         client.post(
             f"/projects/{project['id']}/scenes/{scene['id']}/validate",
-            json={},
-        ).status_code
-        == 404
-    )
-    assert (
-        client.post(
-            f"/projects/{project['id']}/validation-runs",
             json={},
         ).status_code
         == 404

@@ -119,6 +119,8 @@ def test_redact_direct_secret_prompt_and_body() -> None:
             "user_prompt": "模型 Prompt",
             "scene_draft": "散文正文",
             "evidence_quote": "伸手拾起残玉",
+            "source_evidence": "残玉在路人手中也亮了",
+            "canon_evidence": "残玉只能由林晚触活",
             "keep": 1,
             "prompt_version": "fake-v1",
             "prompt_tokens": 10,
@@ -128,12 +130,16 @@ def test_redact_direct_secret_prompt_and_body() -> None:
     assert result["user_prompt"]["ref"].startswith("prompt:")
     assert result["scene_draft"]["ref"].startswith("body:")
     assert result["evidence_quote"]["ref"].startswith("body:")
+    assert result["source_evidence"]["ref"].startswith("body:")
+    assert result["canon_evidence"]["ref"].startswith("body:")
     assert result["keep"] == 1
     assert result["prompt_version"] == "fake-v1"
     assert result["prompt_tokens"] == 10
     assert "模型 Prompt" not in json.dumps(result, ensure_ascii=False)
     assert "散文正文" not in json.dumps(result, ensure_ascii=False)
     assert "伸手拾起残玉" not in json.dumps(result, ensure_ascii=False)
+    assert "残玉在路人手中也亮了" not in json.dumps(result, ensure_ascii=False)
+    assert "残玉只能由林晚触活" not in json.dumps(result, ensure_ascii=False)
 
 
 def test_audit_events_migration_defines_required_columns() -> None:

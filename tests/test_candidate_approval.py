@@ -246,7 +246,6 @@ def test_healthz_and_prior_apis_still_present() -> None:
     )
     assert not any("seed-status" in path for path in paths)
     assert "/projects/{project_id}/chapters/generate" not in paths
-    assert "/projects/{project_id}/validation-runs" not in paths
     assert "/projects/{project_id}/scenes/{scene_id}/validate" not in paths
     assert "/projects/{project_id}/scenes/{scene_id}/summary" not in paths
     assert "/projects/{project_id}/chapters/{chapter_id}/summary" not in paths
