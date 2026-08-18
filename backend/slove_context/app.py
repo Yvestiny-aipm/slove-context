@@ -15,12 +15,15 @@ Approve does not write Canon; submit creates or supersedes a Canon Fact.
 Node 4.3: Scene / Chapter summary jobs (Fake Provider only).
 Scene Summary recaps one existing Scene Draft. Chapter Summary rolls up
 existing Scene Summaries. Summaries are not Canon / Draft / Candidate.
+Node 5.1: Validation Run (deterministic rules; no LLM). Passed moves
+candidates to AwaitingVerdict only. It is not Approval and does not
+write Canon. No Repair Task.
 
 No auth, queues, or live model clients. Spec / Scene Card approval is not
-Canon approval. Scene Plan, Scene Draft, Candidate Change, and summaries
-are not Canon. There is no Context Pack builder — draft jobs reference a
-static fixture. There is no chapter-level prose generate entrance.
-Built-in /openapi.json is kept.
+Canon approval. Scene Plan, Scene Draft, Candidate Change, summaries,
+and Validation Runs are not Canon. There is no Context Pack builder —
+draft jobs reference a static fixture. There is no chapter-level prose
+generate entrance. Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
@@ -69,6 +72,12 @@ from slove_context.summary.repository import (
     SummaryRepository,
 )
 from slove_context.summary.routes import router as summary_router
+from slove_context.validation.repository import (
+    InMemoryValidationRepository,
+    ValidationRepository,
+)
+from slove_context.validation.routes import router as validation_router
+from slove_context.validation.rules import DeterministicRuleEngine, RuleEngine
 
 configure_json_logging()
 
@@ -82,6 +91,8 @@ def create_app(
     scene_draft_repository: SceneDraftRepository | None = None,
     candidate_change_repository: CandidateChangeRepository | None = None,
     summary_repository: SummaryRepository | None = None,
+    validation_repository: ValidationRepository | None = None,
+    validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
     scene_plan_task_type: str = DEFAULT_TASK_TYPE,
@@ -94,6 +105,7 @@ def create_app(
     scene_summary_task_type: str = SCENE_SUMMARY_TASK_TYPE,
     chapter_summary_task_type: str = CHAPTER_SUMMARY_TASK_TYPE,
     summary_auto_run: bool = True,
+    validation_auto_run: bool = True,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink."""
     application = FastAPI(title="slove-context", version=__version__)
@@ -114,6 +126,12 @@ def create_app(
     application.state.summary_repository = (
         summary_repository or InMemorySummaryRepository()
     )
+    application.state.validation_repository = (
+        validation_repository or InMemoryValidationRepository()
+    )
+    application.state.validation_rule_engine = (
+        validation_rule_engine or DeterministicRuleEngine()
+    )
     application.state.audit_writer = writer
     application.state.llm_gateway = llm_gateway or LlmGateway(
         FakeProvider(), audit_writer=writer
@@ -128,6 +146,7 @@ def create_app(
     application.state.scene_summary_task_type = scene_summary_task_type
     application.state.chapter_summary_task_type = chapter_summary_task_type
     application.state.summary_auto_run = summary_auto_run
+    application.state.validation_auto_run = validation_auto_run
     application.include_router(story_router)
     application.include_router(canon_router)
     application.include_router(scene_router)
@@ -135,6 +154,7 @@ def create_app(
     application.include_router(scene_draft_router)
     application.include_router(candidate_change_router)
     application.include_router(summary_router)
+    application.include_router(validation_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

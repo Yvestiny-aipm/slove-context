@@ -7,8 +7,9 @@ Node 2.1 Story Project / Story Spec writes, node 2.2 Canon writes,
 node 2.3 Canon Snapshot create / freeze, node 3.1 Scene Card
 create / draft edit / approve / dependencies, node 3.3 Scene Plan
 jobs, node 3.4 Scene Draft jobs, and node 4.1 Candidate Change extract
-jobs, node 4.2 human approve / reject / submit, and node 4.3 Scene /
-Chapter summary jobs reuse this writer.
+jobs, node 4.2 human approve / reject / submit, node 4.3 Scene /
+Chapter summary jobs, and node 5.1 Validation Run / Report writes
+reuse this writer.
 Generating a Scene Plan or Scene Draft, extracting Candidate Changes,
 or writing a Scene / Chapter summary is not Canon approval. Approving a
 Candidate Change is not a Canon write; only human submit writes Canon.
@@ -73,6 +74,8 @@ _BODY_KEYS = frozenset(
         "raw_text",
         "content_text",
         "evidence_quote",
+        "source_evidence",
+        "canon_evidence",
         "summary",
         "summary_text",
         "scene_summary",

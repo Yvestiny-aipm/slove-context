@@ -252,7 +252,6 @@ def test_healthz_and_prior_apis_still_present() -> None:
     assert "/projects/{project_id}/chapters/generate" not in paths
     assert "/projects/{project_id}/chapters/{chapter_id}/generate" not in paths
     assert "/projects/{project_id}/chapters/{chapter_id}/drafts" not in paths
-    assert "/projects/{project_id}/validation-runs" not in paths
 
 
 def test_prompt_templates_have_version_and_forbid_canon() -> None:
@@ -673,13 +672,6 @@ def test_no_chapter_generate_or_new_extract_or_validate_paths() -> None:
     assert (
         client.post(
             f"/projects/{project['id']}/chapters/{scene['id']}/generate",
-            json={},
-        ).status_code
-        == 404
-    )
-    assert (
-        client.post(
-            f"/projects/{project['id']}/validation-runs",
             json={},
         ).status_code
         == 404
