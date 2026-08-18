@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 2.1：Story Project 与 Story Spec 持久化 API。不要启动节点 2.2（不要做 Canon 实体 / 事实表）。
+一次只实现一个已冻结节点。当前节点是 2.2：最小 Canon 数据模型与 API。不要启动节点 2.3（不要做快照冻结作业或回放接口；`canon_snapshots` 只建表）。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的 Canon、鉴权、队列或模型调用。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、模型调用或节点 2.3 快照回放。
 
 ## 已冻结、默认不可改
 
@@ -95,3 +95,27 @@ cd backend && alembic upgrade head
 - 保留 `GET /healthz`、`GET /version`、`/openapi.json` 与 `audit_events`。
 - **不是** Canon 实体 / 事实表（节点 2.2）。
 - **不是** 角色、场景、模型调用、前端。
+
+## 命令示例（节点 2.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、以及 Canon 实体 / 证据 / 事实（创建为 NotInCanon、仅人工主编批准或废弃、按项目 / 实体 / 谓语 / 故事时间查询生效事实、supersede 不得就地改写）；不连 Postgres，不调用外部模型。`make migrate` 需要本地 Postgres，建 `audit_events`、Story Project / Spec 表，以及 `entities`、`evidence_records`、`canon_facts`、`canon_fact_versions`、`canon_snapshots`。
+
+## 节点 2.2 边界
+
+- 最小 Canon 数据模型与 API：通用实体、证据、Canon 事实、不可变事实版本。
+- Canon Fact 只追加；更正只能 supersede（旧 Active → Superseded，新事实 Active + 新版本行）。禁止就地改 Active 事实的正文 / value_json。
+- 每条事实含 predicate、value_json、effective_story_time、valid_from_scene_id、status、source_type、evidence_id。
+- 可按项目、实体、谓语、故事时间查询「当时生效」的 Active 事实。
+- 创建 / 批准 / 废弃写既有 `AuditWriter`。仅人工主编可批准、废弃或 supersede（`X-Actor-Type: human_editor`）。无自动批准。
+- `canon_snapshots` 只建表。不实现冻结作业或回放接口（节点 2.3）。
+- 保留 `GET /healthz`、`GET /version`、`audit_events` 与节点 2.1 Story Project / Spec API。
+- **不是** 向量检索、图数据库、自动抽取、LLM / 模型调用。
+- **不是** 把角色 / 场景做成小说写作产品（实体只是通用对象）。
+- **不是** 节点 2.3 的快照冻结 / 回放。

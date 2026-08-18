@@ -3,9 +3,9 @@
 Persists structured audit rows through an AuditSink. The FastAPI app does
 not open a database connection in this node; unit tests use InMemoryAuditSink.
 
-This is not a Canon table and has no Canon write path. Node 2.1 Story
-Project / Story Spec writes reuse this writer. Auto-approve and
-multi-project are not MVP-normal (see docs/mvp-scope.md).
+Node 2.1 Story Project / Story Spec writes and node 2.2 Canon writes
+reuse this writer. Auto-approve and multi-project are not MVP-normal
+(see docs/mvp-scope.md).
 """
 
 from __future__ import annotations

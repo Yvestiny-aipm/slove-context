@@ -7,7 +7,7 @@ install:
 	$(PYTHON) -m pip install -r backend/requirements.txt
 	$(PYTHON) -m pip install -e backend
 
-# Collects tests/ (healthz + request_id + audit + story project/spec) and
+# Collects tests/ (healthz + request_id + audit + story + canon) and
 # contracts/ (0.4 schema checks). No live Postgres and no model calls.
 test:
 	$(PYTHON) -m pytest tests contracts

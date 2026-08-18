@@ -92,23 +92,29 @@ def resolve_actor(
     return Actor(actor_type=actor_type, actor_id=actor_id)
 
 
-def require_human_editor(actor: Actor) -> Actor:
-    """Approve is a human-only transition. Missing or non-human actors fail."""
+def require_human_editor(
+    actor: Actor,
+    *,
+    action: str = "approve",
+    resource: str = "Story Spec",
+) -> Actor:
+    """Human-only transition. Missing or non-human actors fail."""
     if not actor.actor_type:
         raise ActorError(
-            "Approve requires an explicit human actor "
-            "(X-Actor-Type: human_editor). System and agents cannot approve."
+            f"{action.capitalize()} requires an explicit human actor "
+            "(X-Actor-Type: human_editor). System and agents cannot "
+            f"{action}."
         )
     if actor.actor_type in NON_HUMAN_TYPES:
         raise ActorError(
-            f"Actor '{actor.actor_type}' cannot approve a Story Spec. "
-            "Only the human 主编 (human_editor) may approve. "
+            f"Actor '{actor.actor_type}' cannot {action} a {resource}. "
+            f"Only the human 主编 (human_editor) may {action}. "
             "No auto-approval path exists."
         )
     if actor.actor_type != HUMAN_EDITOR:
         raise ActorError(
-            f"Actor '{actor.actor_type}' cannot approve a Story Spec. "
-            "Only the human 主编 (human_editor) may approve."
+            f"Actor '{actor.actor_type}' cannot {action} a {resource}. "
+            f"Only the human 主编 (human_editor) may {action}."
         )
     return actor
 

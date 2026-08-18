@@ -1,7 +1,7 @@
 [project]
 name = "slove-context"
 version = "0.0.0"
-description = "Local monolith (node 2.1). Health/version, audit logs, Story Project / Spec APIs."
+description = "Local monolith (node 2.2). Health/version, audit logs, Story Project / Spec, Canon APIs."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
