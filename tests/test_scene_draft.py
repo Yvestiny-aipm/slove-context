@@ -149,7 +149,9 @@ def _create_snapshot(client: TestClient, project_id: str) -> dict:
     return response.json()
 
 
-def _create_plan(client: TestClient, project_id: str, scene_id: str, snapshot_id: str) -> dict:
+def _create_plan(
+    client: TestClient, project_id: str, scene_id: str, snapshot_id: str
+) -> dict:
     created = client.post(
         f"/projects/{project_id}/scenes/{scene_id}/plans/jobs",
         headers=GENERATE,
@@ -535,7 +537,9 @@ def test_review_agent_cannot_trigger_and_no_chapter_or_extract() -> None:
 
 
 def test_scene_draft_migration_is_incremental() -> None:
-    path = ROOT / "backend" / "alembic" / "versions" / "007_create_scene_draft_tables.py"
+    path = (
+        ROOT / "backend" / "alembic" / "versions" / "007_create_scene_draft_tables.py"
+    )
     text = path.read_text(encoding="utf-8")
     assert "CREATE TABLE scene_draft_jobs" in text
     assert "CREATE TABLE scene_drafts" in text

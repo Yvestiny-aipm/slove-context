@@ -49,8 +49,8 @@ from slove_context.scene_draft.models import (
     DEFAULT_TASK_TYPE,
     DRAFT_GENERATED,
     DRAFT_SUPERSEDED,
-    JOB_CANCELLED,
     JOB_CANCELLABLE_STATES,
+    JOB_CANCELLED,
     JOB_FAILED,
     JOB_QUEUED,
     JOB_REUSABLE_STATES,
@@ -134,9 +134,7 @@ class SceneDraftService:
 
         key = _clean_optional(idempotency_key)
         if key is not None:
-            existing = self._repo.find_job_by_idempotency_key(
-                project_id, scene.id, key
-            )
+            existing = self._repo.find_job_by_idempotency_key(project_id, scene.id, key)
             if existing is not None and existing.state in JOB_REUSABLE_STATES:
                 return existing
 
@@ -177,7 +175,9 @@ class SceneDraftService:
             raise SceneDraftServiceError(404, {"error": "scene_draft_job_not_found"})
         return job
 
-    def cancel_job(self, project_id: str, job_id: str, *, actor: Actor) -> SceneDraftJob:
+    def cancel_job(
+        self, project_id: str, job_id: str, *, actor: Actor
+    ) -> SceneDraftJob:
         self._require_project(project_id)
         try:
             editor = require_human_editor(
@@ -217,7 +217,11 @@ class SceneDraftService:
         self._require_project(project_id)
         scene = self._require_scene(project_id, scene_id)
         draft = self._repo.get_draft(revision_id)
-        if draft is None or draft.project_id != project_id or draft.scene_id != scene.id:
+        if (
+            draft is None
+            or draft.project_id != project_id
+            or draft.scene_id != scene.id
+        ):
             raise SceneDraftServiceError(404, {"error": "scene_draft_not_found"})
         return draft
 
