@@ -235,10 +235,14 @@ def test_healthz_and_prior_apis_still_present() -> None:
     assert "/projects/{project_id}/chapters/generate" not in paths
     assert "/projects/{project_id}/validation-runs" not in paths
     assert "/projects/{project_id}/scenes/{scene_id}/validate" not in paths
+    assert "/projects/{project_id}/candidate-changes/{candidate_id}/approve" in paths
+    assert "/projects/{project_id}/candidate-changes/{candidate_id}/reject" in paths
+    assert "/projects/{project_id}/candidate-changes/{candidate_id}/submit" in paths
     assert (
-        "/projects/{project_id}/candidate-changes/{candidate_id}/approve" not in paths
+        "/projects/{project_id}/candidate-changes/{candidate_id}/seed-status"
+        not in paths
     )
-    assert "/projects/{project_id}/candidate-changes/{candidate_id}/submit" not in paths
+    assert not any("seed-status" in path for path in paths)
 
 
 def test_prompt_template_has_version_requires_json_forbids_canon() -> None:

@@ -26,6 +26,8 @@ class CandidateChangeRepository(Protocol):
 
     def get_candidate(self, candidate_id: str) -> CandidateChange | None: ...
 
+    def save_candidate(self, candidate: CandidateChange) -> None: ...
+
     def list_candidates(
         self, project_id: str, scene_id: str
     ) -> list[CandidateChange]: ...
@@ -76,6 +78,9 @@ class InMemoryCandidateChangeRepository:
 
     def get_candidate(self, candidate_id: str) -> CandidateChange | None:
         return self.candidates.get(candidate_id)
+
+    def save_candidate(self, candidate: CandidateChange) -> None:
+        self.candidates[candidate.id] = candidate
 
     def list_candidates(self, project_id: str, scene_id: str) -> list[CandidateChange]:
         items = [
