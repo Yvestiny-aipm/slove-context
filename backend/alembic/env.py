@@ -1,8 +1,7 @@
-"""Alembic environment (node 1.3 + 2.1).
+"""Alembic environment (node 1.3 + 2.1 + 2.2).
 
 Handwritten migrations only. Does not autogenerate from business models.
-There are no Canon tables. Unit tests do not run this file against a
-live database.
+Unit tests do not run this file against a live database.
 """
 
 from __future__ import annotations
@@ -23,7 +22,7 @@ database_url = os.environ.get("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
-# No SQLAlchemy metadata in this node. Migrations are written by hand.
+# No SQLAlchemy metadata. Migrations are written by hand.
 target_metadata = None
 
 
