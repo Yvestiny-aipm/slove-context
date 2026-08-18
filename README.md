@@ -14,10 +14,10 @@ slove context
 | `AGENTS.md` | 实现约定（八条规则）与常用命令示例 |
 | `docs/` | 已冻结范围 / 术语 / 状态机，骨架边界 `architecture.md`，以及 `audit.md` |
 | `contracts/` | 已批准 JSON Schema（节点 0.4） |
-| `backend/` | FastAPI 应用（`/healthz`、`/version`、2.1–9.2 API：含单场景 DAG、批量调度与实验运行；无真实模型客户端）与 9.1 评测 runner |
-| `backend/alembic/` | 可审阅迁移至 `022_experiments`（单元测试不连库） |
+| `backend/` | FastAPI 应用（`/healthz`、`/version`、2.1–9.3 API：含单场景 DAG、批量调度、实验运行与发布门 / 全书导出；无真实模型客户端）与 9.1 评测 runner |
+| `backend/alembic/` | 可审阅迁移至 `023_release`（单元测试不连库） |
 | `evals/` | 节点 9.1 叙事一致性评测案例 / 夹具 / 期望（确定性 runner，不写 Canon；9.2 只读引用） |
-| `tests/` | 进程内测试（含 8.4 批量调度、9.1 评测与 9.2 实验运行）；`make test` 也会跑 contracts 测试 |
+| `tests/` | 进程内测试（含 8.4 批量调度、9.1 评测、9.2 实验运行与 9.3 发布门）；`make test` 也会跑 contracts 测试 |
 | `scripts/` | 脚本目录占位 |
 | `data/` | 本地数据占位（不提交密钥或模型输出） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） |
