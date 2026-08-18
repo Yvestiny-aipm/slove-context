@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slove-context.local/contracts/scene-card.schema.json",
+  "title": "Scene Card / 场景卡",
+  "description": "一次场景生成的任务卡（节点 0.2）。规定该场景的生成边界。生成单位仅为场景，不是章，不是全书。不因生成结果自动改 Canon。无自动批准。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "project_id",
+    "created_at",
+    "created_by",
+    "scene_id",
+    "status",
+    "location",
+    "present_entities",
+    "generation_boundary",
+    "forbidden",
+    "knowledge_boundaries"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "#/$defs/schema_version" },
+    "id": { "$ref": "#/$defs/uuid" },
+    "project_id": { "$ref": "#/$defs/project_id" },
+    "created_at": { "$ref": "#/$defs/iso8601_utc" },
+    "created_by": { "$ref": "#/$defs/human_editor" },
+    "scene_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "本卡绑定的唯一场景。场景卡是 per-scene，不得作为章级或全书级生成入口。"
+    },
+    "status": { "$ref": "#/$defs/scene_card_status" },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本场发生的地点（Location）。地点是场所，不是场景本身。"
+    },
+    "present_entities": {
+      "type": "array",
+      "description": "本场在场实体（角色、物品、地点等可被指称对象）。",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "generation_boundary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本场能写到哪：场景级生成边界。"
+    },
+    "forbidden": {
+      "type": "array",
+      "description": "本场不能写什么。",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "knowledge_boundaries": {
+      "type": "array",
+      "description": "知情边界：某个角色此时知道什么、不知道什么，用于防止穿帮。不得靠自动批准抹掉越界。",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本契约的版本字符串（节点 0.4）。"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID 字符串。"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "唯一故事项目的标识。MVP 只有一个小说项目；本字段不是多项目数组，多项目不是 MVP 正常行为。"
+    },
+    "iso8601_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "ISO 8601 UTC 时间戳，必须以 Z 结尾。"
+    },
+    "human_editor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工主编（人类编辑者）的 id 或姓名。不是系统批准者，不是模型、实现 bot、验收 bot 或 Agent。"
+    },
+    "scene_card_status": {
+      "type": "string",
+      "description": "场景卡生命周期（0.2）：为主编指定的场景编写 → 用于生成该场散文 → 用后归档。",
+      "oneOf": [
+        { "const": "Written", "description": "已编写：主编已写定该场场景卡。" },
+        { "const": "InUse", "description": "使用中：正用于生成该场散文。" },
+        { "const": "Archived", "description": "已归档：本场用后归档。不改 Canon。" }
+      ]
+    }
+  }
+}

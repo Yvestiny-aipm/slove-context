@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slove-context.local/contracts/candidate-change.schema.json",
+  "title": "Candidate Change / 候选变更",
+  "description": "从生成散文中抽取、不得直接写入 Canon、须经校验与人类主编裁决的待裁决变更（节点 0.2 / 0.3）。候选不是 Canon Fact，也不是 Evidence。不存在自动批准。本对象终态仍是候选：不存在 Candidate Change → Canon Fact 的字段或路径。成为 Canon 事实必须另经人工 Approval Decision（批准）再由人工提交；批准本身不写 Canon。模型、实现 bot、验收 bot、Agent 均不得把候选写成 Canon。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "project_id",
+    "created_at",
+    "created_by",
+    "subject",
+    "predicate",
+    "object",
+    "value",
+    "effective_story_time",
+    "source_scene_id",
+    "evidence_quote",
+    "confidence",
+    "status"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "#/$defs/schema_version" },
+    "id": { "$ref": "#/$defs/uuid" },
+    "project_id": { "$ref": "#/$defs/project_id" },
+    "created_at": { "$ref": "#/$defs/iso8601_utc" },
+    "created_by": { "$ref": "#/$defs/human_editor" },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "description": "候选变更三元组的主语（subject）。"
+    },
+    "predicate": {
+      "type": "string",
+      "minLength": 1,
+      "description": "候选变更三元组的谓语（predicate）。"
+    },
+    "object": {
+      "type": "string",
+      "minLength": 1,
+      "description": "候选变更三元组的宾语（object）。与 value 共同表达冻结的 object/value 含义。"
+    },
+    "value": {
+      "type": "string",
+      "minLength": 1,
+      "description": "该谓语下主张的值（object/value 的值侧）。可与 object 相同，或为其字面取值。不是 Canon Fact。"
+    },
+    "effective_story_time": {
+      "type": "string",
+      "minLength": 1,
+      "description": "故事内生效时间（不是墙上时钟）。本条主张若被批准并提交，在故事时间线上从何时生效。"
+    },
+    "source_scene_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "抽出本候选的源场景。抽取单位为场景。"
+    },
+    "evidence_quote": {
+      "type": "string",
+      "minLength": 1,
+      "description": "原文证据（Evidence）：支撑本候选的散文或已写定规格文句摘引。证据是出处依据，不是提案，不是 Canon。被引用不会使证据变成 Canon。"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "抽取置信度，闭区间 [0, 1]。置信度不是批准。"
+    },
+    "status": { "$ref": "#/$defs/candidate_change_status" }
+  },
+  "$defs": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本契约的版本字符串（节点 0.4）。"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID 字符串。"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "唯一故事项目的标识。MVP 只有一个小说项目；本字段不是多项目数组，多项目不是 MVP 正常行为。"
+    },
+    "iso8601_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "ISO 8601 UTC 时间戳，必须以 Z 结尾。"
+    },
+    "human_editor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工主编（人类编辑者）的 id 或姓名。不是系统批准者，不是模型、实现 bot、验收 bot 或 Agent。即使对象由系统组装，本字段仍标识主编，不表示系统已批准。"
+    },
+    "candidate_change_status": {
+      "type": "string",
+      "description": "候选变更状态，必须与节点 0.3 Candidate Change 状态机一致。不存在自动批准，也不存在本对象变成 Canon Fact 的状态。",
+      "oneOf": [
+        { "const": "Extracted", "description": "已抽取：已抽出且已绑 Evidence。" },
+        { "const": "Validating", "description": "校验中：进入 Validate，尚未出结果。不是批准。" },
+        { "const": "FailedValidation", "description": "未通过：不得进入批准。" },
+        { "const": "AwaitingVerdict", "description": "待主编裁决：已通过校验，等待人类裁决。通过不是批准。" },
+        { "const": "Approved", "description": "已批准未提交：仅人工主编可进入；Canon 尚未改。批准本身不写 Canon。" },
+        { "const": "Rejected", "description": "已拒绝：主编拒绝；不提交。" },
+        { "const": "Submitted", "description": "已提交：主编已另执行提交；对应 Canon 事实在另一对象上诞生或被覆盖。本对象仍是已提交的候选，不变成 Canon Fact。" },
+        { "const": "Failed", "description": "失败：抽取后或校验执行失败。不得进入批准；不删除。" },
+        { "const": "Cancelled", "description": "已取消：主编撤回该候选。不写 Canon；不删除。" },
+        { "const": "Rework", "description": "返工：修复后重抽或重校验。不批准。" }
+      ]
+    }
+  }
+}

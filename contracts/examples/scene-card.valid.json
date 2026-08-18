@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.4.0",
+  "id": "44444444-4444-4444-8444-444444444444",
+  "project_id": "11111111-1111-4111-8111-111111111111",
+  "created_at": "2026-08-18T02:10:00Z",
+  "created_by": "主编",
+  "scene_id": "33333333-3333-4333-8333-333333333333",
+  "status": "Written",
+  "location": "青石镇河滩",
+  "present_entities": [
+    "林晚",
+    "残玉"
+  ],
+  "generation_boundary": "只写林晚在河滩捡到残玉这一场，不写整章。",
+  "forbidden": [
+    "禁止写出残玉来历"
+  ],
+  "knowledge_boundaries": [
+    "林晚不知残玉能开门"
+  ]
+}

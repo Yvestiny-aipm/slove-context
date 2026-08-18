@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slove-context.local/contracts/context-pack.schema.json",
+  "title": "Context Pack / 场景上下文包",
+  "description": "为一个场景组装的生成或校验只读上下文（节点 0.4）。生成单位仅为该场景。包含的 Canon 摘录是只读快照，供对照；不是可写 Canon 块，模型不能据此提交或改 Canon。无自动批准开关。Validate 通过不是批准。多项目不是 MVP 正常行为。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "project_id",
+    "created_at",
+    "created_by",
+    "scene_id",
+    "purpose",
+    "story_spec_id",
+    "scene_card_id",
+    "canon_excerpts"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "#/$defs/schema_version" },
+    "id": { "$ref": "#/$defs/uuid" },
+    "project_id": { "$ref": "#/$defs/project_id" },
+    "created_at": { "$ref": "#/$defs/iso8601_utc" },
+    "created_by": { "$ref": "#/$defs/human_editor" },
+    "scene_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "本包服务的唯一场景。不得一次覆盖整章或全书。"
+    },
+    "purpose": { "$ref": "#/$defs/pack_purpose" },
+    "story_spec_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "对照用的已写定 Story Spec。规格是编辑约束，不是 Canon。"
+    },
+    "scene_card_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "本场场景卡。规定生成边界。"
+    },
+    "scene_plan_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "可选的本场场景计划。计划与 Canon 冲突时 Canon 胜。"
+    },
+    "scene_draft_excerpt": {
+      "type": "string",
+      "description": "只读散文摘录（若已有草稿）。只可从中抽取候选变更，不得直接改 Canon。"
+    },
+    "candidate_change_ids": {
+      "type": "array",
+      "description": "校验用途下纳入对照的候选变更。不是批准列表。",
+      "items": { "$ref": "#/$defs/uuid" },
+      "uniqueItems": true
+    },
+    "knowledge_boundaries": {
+      "type": "array",
+      "description": "本场知情边界。不得靠自动批准抹掉越界。",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "canon_excerpts": {
+      "type": "array",
+      "description": "当前 Canon 的只读摘录（快照）。供生成/校验对照。不是可提交、可写的 Canon 块。模型与 bot 不得把本数组写回 Canon。",
+      "items": { "$ref": "#/$defs/canon_excerpt" }
+    }
+  },
+  "$defs": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本契约的版本字符串（节点 0.4）。"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID 字符串。"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "唯一故事项目的标识。MVP 只有一个小说项目；本字段不是多项目数组，多项目不是 MVP 正常行为。"
+    },
+    "iso8601_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "ISO 8601 UTC 时间戳，必须以 Z 结尾。"
+    },
+    "human_editor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工主编（人类编辑者）的 id 或姓名。不是系统批准者，不是模型、实现 bot、验收 bot 或 Agent。本包不能授权它们写 Canon。"
+    },
+    "pack_purpose": {
+      "type": "string",
+      "description": "本包用途。生成与校验都不是批准。",
+      "oneOf": [
+        { "const": "Generate", "description": "为本场生成组装只读上下文。不写 Canon。" },
+        { "const": "Validate", "description": "为本场校验组装只读上下文。通过不是批准。" }
+      ]
+    },
+    "canon_excerpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "一条只读 Canon 摘录（类事实对象）。用于对照，不能提交。草稿与之冲突时 Canon 胜。",
+      "required": [
+        "statement",
+        "source_evidence",
+        "effective_story_time"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "已批准真相的一条陈述摘录。只读。"
+        },
+        "source_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "description": "原文证据：该陈述当初所依据的文句摘引。证据本身不是可写 Canon。"
+        },
+        "effective_story_time": {
+          "type": "string",
+          "minLength": 1,
+          "description": "故事内生效时间。"
+        }
+      }
+    }
+  }
+}

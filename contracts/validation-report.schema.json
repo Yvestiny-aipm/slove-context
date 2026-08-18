@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slove-context.local/contracts/validation-report.schema.json",
+  "title": "Validation Report / 校验报告",
+  "description": "一次 Validate（Validation Run）的结果报告。对照 Canon 与 Story Spec 检查候选变更是否可提交人类裁决。通过只表示可交裁决，不是批准，不写 Canon。未通过者不能进入批准。不得用自动批准抹掉违规。无自动批准字段。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "project_id",
+    "created_at",
+    "created_by",
+    "scene_id",
+    "candidate_change_ids",
+    "outcome",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "#/$defs/schema_version" },
+    "id": { "$ref": "#/$defs/uuid" },
+    "project_id": { "$ref": "#/$defs/project_id" },
+    "created_at": { "$ref": "#/$defs/iso8601_utc" },
+    "created_by": { "$ref": "#/$defs/human_editor" },
+    "scene_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "本次校验所属的唯一场景。校验按场景进行。"
+    },
+    "candidate_change_ids": {
+      "type": "array",
+      "description": "纳入本次校验的候选变更。",
+      "items": { "$ref": "#/$defs/uuid" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "outcome": { "$ref": "#/$defs/validation_outcome" },
+    "violations": {
+      "type": "array",
+      "description": "检出的违规。outcome 为 Passed 时必须为空；RuleFailed 时至少一条。",
+      "items": { "$ref": "#/$defs/violation" }
+    }
+  },
+  "$defs": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "本契约的版本字符串（节点 0.4）。"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID 字符串。"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "唯一故事项目的标识。MVP 只有一个小说项目；本字段不是多项目数组，多项目不是 MVP 正常行为。"
+    },
+    "iso8601_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+      "description": "ISO 8601 UTC 时间戳，必须以 Z 结尾。"
+    },
+    "human_editor": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工主编（人类编辑者）的 id 或姓名。本报告归属该主编的项目。不是系统批准者；Validate 不是 Approval。"
+    },
+    "validation_outcome": {
+      "type": "string",
+      "description": "与节点 0.3 Validation Run 结果对齐。Passed 不是批准。",
+      "oneOf": [
+        { "const": "Passed", "description": "已通过：候选可交人类裁决。不是批准，不写 Canon。" },
+        { "const": "RuleFailed", "description": "未通过：检出 Violation；不得进入批准。" },
+        { "const": "ExecFailed", "description": "执行失败：运行中断；不视为通过，不得进入批准。" }
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "description": "违规严重度。Blocking 阻断进入批准。",
+      "oneOf": [
+        { "const": "Blocking", "description": "阻断：未通过，不得进入批准。" },
+        { "const": "Advisory", "description": "提示：记录问题；不得当作批准或自动消掉 Blocking 违规。" }
+      ]
+    },
+    "recommended_action": {
+      "type": "string",
+      "description": "建议的修复方向（0.2 Repair Task）。完成仍须再校验与人类裁决；不是批准。",
+      "oneOf": [
+        { "const": "ReviseScenePlan", "description": "改场景计划后再生成/抽取。不等于批准。" },
+        { "const": "Regenerate", "description": "重生成本场散文。不等于批准。" },
+        { "const": "Reextract", "description": "重抽候选变更。不等于批准。" },
+        { "const": "HumanReject", "description": "由人工主编拒绝相关候选。仍是人类裁决，不是自动批准。" }
+      ]
+    },
+    "violation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "违规（0.2 Violation）：某条候选或草稿对照校验规则未通过的一次具体失败。不得用自动批准消掉。",
+      "required": [
+        "rule_id",
+        "severity",
+        "entity_ids",
+        "source_evidence",
+        "canon_evidence",
+        "recommended_action"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "未通过的 Validation Rule 标识。"
+        },
+        "severity": { "$ref": "#/$defs/severity" },
+        "entity_ids": {
+          "type": "array",
+          "description": "本条违规涉及的实体标识（角色、物品、地点等）。",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "source_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "description": "原文证据：草稿或候选所依据的文句。不是 Canon。"
+        },
+        "canon_evidence": {
+          "type": "string",
+          "minLength": 1,
+          "description": "已批准真相侧的对照证据。草稿与 Canon 冲突时 Canon 胜。"
+        },
+        "recommended_action": { "$ref": "#/$defs/recommended_action" }
+      }
+    }
+  }
+}
