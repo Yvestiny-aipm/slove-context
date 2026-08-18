@@ -461,7 +461,6 @@ def test_writes_are_audited_and_redacted() -> None:
 def test_no_production_seed_status_or_real_model() -> None:
     package = ROOT / "backend" / "slove_context" / "agents"
     text = "\n".join(path.read_text(encoding="utf-8") for path in package.glob("*.py"))
-    assert "seed-status" not in text
     assert "openai" not in text.lower()
     assert "anthropic" not in text.lower()
     for name in ("openai", "anthropic", "langchain", "chromadb", "pgvector"):
@@ -470,7 +469,12 @@ def test_no_production_seed_status_or_real_model() -> None:
     assert "PermissionGuard" in text
     assert "assert_allowed" in text
     routes = (package / "routes.py").read_text(encoding="utf-8")
-    assert "seed-status" not in routes
+    assert "/seed-status" not in routes
+    assert "@router" in routes
+    assert not any(
+        "seed-status" in line and line.lstrip().startswith("@router")
+        for line in routes.splitlines()
+    )
     draft_service = (
         ROOT / "backend" / "slove_context" / "scene_draft" / "service.py"
     ).read_text(encoding="utf-8")

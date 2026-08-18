@@ -13,7 +13,6 @@ from typing import Any
 from slove_context.agents.models import (
     ACTION_APPROVE_CANON,
     ACTION_SUBMIT_CANON,
-    ACTION_WRITE_CANON,
     AGENT_HUMAN_APPROVER,
     AGENT_IDS,
     APPROVE_ACTIONS,
@@ -265,7 +264,7 @@ def default_tool_for(agent: Agent) -> str:
     tool = primary.get(agent.id)
     if tool and tool in agent.allowed_tools:
         return tool
-    return sorted(agent.allowed_tools)[0]
+    return min(agent.allowed_tools)
 
 
 def canon_write_denied_detail(agent_id: str, action: str) -> dict[str, Any]:

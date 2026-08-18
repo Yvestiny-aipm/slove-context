@@ -67,6 +67,11 @@ seed-status route. Built-in /openapi.json is kept.
 from fastapi import FastAPI
 
 from slove_context import __version__
+from slove_context.agents.repository import (
+    AgentRepository,
+    InMemoryAgentRunRepository,
+)
+from slove_context.agents.routes import router as agents_router
 from slove_context.audit import AuditWriter, InMemoryAuditSink
 from slove_context.candidate_change.models import (
     DEFAULT_REPAIR_TASK_TYPE as EXTRACT_REPAIR_TASK_TYPE,
@@ -84,11 +89,6 @@ from slove_context.context_pack.repository import (
     InMemoryContextPackRepository,
 )
 from slove_context.context_pack.routes import router as context_pack_router
-from slove_context.agents.repository import (
-    AgentRepository,
-    InMemoryAgentRunRepository,
-)
-from slove_context.agents.routes import router as agents_router
 from slove_context.jobs.deps import services_from_state
 from slove_context.jobs.repository import InMemoryJobRepository, JobRepository
 from slove_context.jobs.routes import router as jobs_router

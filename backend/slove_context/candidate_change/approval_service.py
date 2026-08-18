@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from slove_context.agents.permissions import PermissionDenied, PermissionGuard
 from slove_context.audit import AuditWriter
 from slove_context.candidate_change.models import (
     APPROVE_FROM,
@@ -44,7 +45,6 @@ from slove_context.candidate_change.validate import (
 from slove_context.canon.models import CanonFact, Entity
 from slove_context.canon.service import CanonService, CanonServiceError
 from slove_context.logging import get_request_id
-from slove_context.agents.permissions import PermissionDenied, PermissionGuard
 from slove_context.story.actors import (
     HUMAN_EDITOR,
     NON_HUMAN_TYPES,
