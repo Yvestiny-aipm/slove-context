@@ -247,7 +247,9 @@ class SummaryService:
     ) -> SummaryJob:
         return self._cancel_job(project_id, job_id, kind=KIND_CHAPTER, actor=actor)
 
-    def list_scene_summaries(self, project_id: str, scene_id: str) -> list[SceneSummary]:
+    def list_scene_summaries(
+        self, project_id: str, scene_id: str
+    ) -> list[SceneSummary]:
         self._require_project(project_id)
         scene = self._require_scene(project_id, scene_id)
         return self._repo.list_scene_summaries(project_id, scene.id)
@@ -349,9 +351,7 @@ class SummaryService:
             draft=draft,
         )
 
-    def _run_chapter_job(
-        self, job: SummaryJob, *, sources: list[SceneSummary]
-    ) -> None:
+    def _run_chapter_job(self, job: SummaryJob, *, sources: list[SceneSummary]) -> None:
         self._transition(job, JOB_RUNNING, actor_type=SYSTEM)
         chapter_id = job.chapter_id or ""
         response = self._generate(
@@ -554,9 +554,7 @@ class SummaryService:
 
         self._gateway.invoke_once("persist_generation_state", persist)
 
-    def _transition(
-        self, job: SummaryJob, new_state: str, *, actor_type: str
-    ) -> None:
+    def _transition(self, job: SummaryJob, new_state: str, *, actor_type: str) -> None:
         before = job.to_audit_dict()
         self._set_state(job, new_state)
         self._write_audit(

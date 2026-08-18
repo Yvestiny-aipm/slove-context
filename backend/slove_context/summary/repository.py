@@ -109,7 +109,9 @@ class InMemorySummaryRepository:
     def save_scene_summary(self, summary: SceneSummary) -> None:
         self.scene_summaries[summary.id] = summary
 
-    def list_scene_summaries(self, project_id: str, scene_id: str) -> list[SceneSummary]:
+    def list_scene_summaries(
+        self, project_id: str, scene_id: str
+    ) -> list[SceneSummary]:
         items = [
             item
             for item in self.scene_summaries.values()

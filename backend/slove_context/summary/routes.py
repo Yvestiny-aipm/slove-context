@@ -90,7 +90,10 @@ def _service(request: Request) -> SummaryService:
 
 def _actor(
     request: Request,
-    body: TriggerSceneSummaryBody | TriggerChapterSummaryBody | CancelBody | None = None,
+    body: TriggerSceneSummaryBody
+    | TriggerChapterSummaryBody
+    | CancelBody
+    | None = None,
 ) -> Actor:
     body_type = body.actor_type if body is not None else None
     body_id = None
@@ -110,9 +113,7 @@ def _raise(exc: SummaryServiceError) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-@router.post(
-    "/projects/{project_id}/scenes/{scene_id}/summaries/jobs", status_code=201
-)
+@router.post("/projects/{project_id}/scenes/{scene_id}/summaries/jobs", status_code=201)
 def trigger_scene_summary_job(
     request: Request,
     project_id: str,
@@ -178,9 +179,7 @@ def get_scene_summary(
     request: Request, project_id: str, scene_id: str, revision_id: str
 ) -> dict[str, Any]:
     try:
-        summary = _service(request).get_scene_summary(
-            project_id, scene_id, revision_id
-        )
+        summary = _service(request).get_scene_summary(project_id, scene_id, revision_id)
     except SummaryServiceError as exc:
         _raise(exc)
     return summary.to_public_dict()

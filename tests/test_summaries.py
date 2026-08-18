@@ -244,9 +244,7 @@ def test_healthz_and_prior_apis_still_present() -> None:
         "/projects/{project_id}/scenes/{scene_id}/drafts/{revision_id}/extract-jobs"
         in paths
     )
-    assert (
-        "/projects/{project_id}/candidate-changes/{candidate_id}/approve" in paths
-    )
+    assert "/projects/{project_id}/candidate-changes/{candidate_id}/approve" in paths
     assert "/projects/{project_id}/scenes/{scene_id}/summaries/jobs" in paths
     assert "/projects/{project_id}/scene-summary-jobs/{job_id}" in paths
     assert "/projects/{project_id}/chapters/{chapter_id}/summaries/jobs" in paths
@@ -336,7 +334,14 @@ def test_scene_summary_from_existing_draft_with_metadata_and_audit() -> None:
     assert "scene_summary.create" in actions
     assert not any(event.action.startswith("canon_fact") for event in sink.events)
     assert not any("extract" in event.action for event in sink.events)
-    assert not any(event.action.endswith(".approve") for event in sink.events)
+    summary_events = [
+        event
+        for event in sink.events
+        if event.resource_type in {"summary_job", "scene_summary", "chapter_summary"}
+    ]
+    assert summary_events
+    assert not any("approve" in event.action for event in summary_events)
+    assert not any("submit" in event.action for event in summary_events)
     dumped = "".join(
         str(event.after_json) + str(event.before_json) for event in sink.events
     )
@@ -426,9 +431,7 @@ def test_chapter_rollup_from_scene_summaries() -> None:
     assert job["is_candidate_change"] is False
     assert job["writes_canon"] is False
 
-    listed = client.get(
-        f"/projects/{project['id']}/chapters/{chapter['id']}/summaries"
-    )
+    listed = client.get(f"/projects/{project['id']}/chapters/{chapter['id']}/summaries")
     assert listed.status_code == 200, listed.text
     assert listed.json()["is_chapter_prose_generate"] is False
     items = listed.json()["items"]
@@ -467,9 +470,7 @@ def test_chapter_rollup_from_scene_summaries() -> None:
     assert retry.status_code == 201
     assert retry.json()["id"] != job["id"]
     assert retry.json()["summary_revision"] == 2
-    rolled = client.get(
-        f"/projects/{project['id']}/chapters/{chapter['id']}/summaries"
-    )
+    rolled = client.get(f"/projects/{project['id']}/chapters/{chapter['id']}/summaries")
     assert [item["revision"] for item in rolled.json()["items"]] == [2, 1]
     assert rolled.json()["items"][1]["status"] == "Superseded"
     assert rolled.json()["items"][1]["id"] == summary["id"]
@@ -506,9 +507,7 @@ def test_chapter_rejects_missing_scene_summaries() -> None:
     detail = created.json()["detail"]
     assert detail["error"] == "scene_summaries_missing"
     assert second["id"] in detail["missing_scene_ids"]
-    listed = client.get(
-        f"/projects/{project['id']}/chapters/{chapter['id']}/summaries"
-    )
+    listed = client.get(f"/projects/{project['id']}/chapters/{chapter['id']}/summaries")
     assert listed.json()["items"] == []
 
 
