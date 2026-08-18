@@ -1,4 +1,4 @@
-.PHONY: test format typecheck lint check install
+.PHONY: test format typecheck lint check install migrate
 
 PYTHON ?= python3
 
@@ -7,7 +7,8 @@ install:
 	$(PYTHON) -m pip install -r backend/requirements.txt
 	$(PYTHON) -m pip install -e backend
 
-# Collects tests/ (healthz + skeleton) and contracts/ (0.4 schema checks).
+# Collects tests/ (healthz + request_id + audit) and contracts/ (0.4 schema checks).
+# No live Postgres and no model calls.
 test:
 	$(PYTHON) -m pytest tests contracts
 
@@ -19,5 +20,9 @@ lint:
 
 typecheck:
 	cd backend && $(PYTHON) -m mypy slove_context
+
+# Optional. Needs local Postgres. Unit tests do not run this.
+migrate:
+	cd backend && $(PYTHON) -m alembic upgrade head
 
 check: format lint typecheck test

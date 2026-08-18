@@ -1,7 +1,7 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 1.2：可重复的本地开发环境（Postgres + FastAPI `/healthz` / `/version`）。不要启动节点 1.3（不要做审计 / 结构化日志系统）。
+一次只实现一个已冻结节点。当前节点是 1.3：审计与结构化日志框架。不要启动节点 2.1（不要做 Story Project / Story Spec）。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
 不要把未实现行为写成已完成。不要发明已落地的 Canon、鉴权、队列或模型调用。
@@ -51,9 +51,23 @@ uvicorn slove_context.app:app --app-dir backend --host 127.0.0.1 --port 8000
 
 `make test` 用进程内 TestClient 检查 `/healthz`，不需要 Docker，不调用外部模型。
 
-## 节点 1.2 边界
+## 命令示例（节点 1.3）
 
-- 可启动的本地 Postgres（healthcheck + 持久卷）与 FastAPI `GET /healthz`、`GET /version`。
-- 节点 1.1 的仓库骨架已合并；本节点只补本地开发环境。
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏；不连 Postgres，不调用外部模型。`make migrate` 需要本地 Postgres，只建 `audit_events`。
+
+## 节点 1.3 边界
+
+- 每个 HTTP 请求有 `request_id`（接受或生成 `X-Request-ID`）。
+- JSON 结构化日志（至少 request-complete：`timestamp`、`level`、`request_id`、`operation`、`duration_ms`）。
+- Alembic 迁移：仅 `audit_events`（字段见 `docs/audit.md`）。
+- 通用审计写入接口 + 默认脱敏（正文 / Prompt / 密钥）。单元测试用内存 sink。
+- 保留 `GET /healthz` 与 `GET /version`。
 - **不是** Canon 表或 Canon 写入路径、用户鉴权、队列、模型调用。
-- **不是** 节点 1.3 的审计 / 结构化日志系统（默认日志即可）。
+- **不是** 节点 2.1 的 Story Project / Story Spec。
