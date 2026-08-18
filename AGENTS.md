@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 8.2：Agent 注册表与权限边界（仅 Fake / 内存仓库）。不要启动节点 8.3（不要实现 DAG）。不要启动节点 8.4。不要实现 Agent 自动批准 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。任何 Agent（含 Worker / system）不得绕过 Approval 写 Canon。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格发现默认不阻断 Canon 提交。
+一次只实现一个已冻结节点。当前节点是 8.3：单场景 DAG 编排器（仅 Fake / 内存仓库）。不要启动节点 8.4（不要实现批量调度）。不要启动节点 9.x。不要实现 Agent 自动裁决。不要批准或提交 Canon（编排器不得自动批准；canon_commit 仅在人类主编批准后走既有 4.2 submit）。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。并行节点不得写同一资源。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格发现默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
-不要把未实现行为写成已完成。不要发明已落地的鉴权、8.3 DAG、真实模型调用或生成器。节点 8.2 只做 Agent 注册表与权限边界。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、8.4 批量、真实模型调用或生成器。节点 8.3 只做单场景 DAG 编排。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。canon_commit 仅在人类批准后调用既有 4.2 submit。
 
 ## 已冻结、默认不可改
 
@@ -545,3 +545,31 @@ cd backend && alembic upgrade head
 - 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–8.1 API。
 - **不是** 节点 8.3 DAG、8.4 批量、节点 9.x、自动批准、向量检索、真实模型供应商客户端、Agent 写 Canon。
+
+## 命令示例（节点 8.3）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限，以及单场景 DAG 编排（固定节点与依赖、并行不写同一资源、blocker 阻断后续自动 submit、按节点 rerun 默认复用冻结上游、rebuild_context_pack 必须显式、可视化 JSON 含 status / duration_ms、四条 Fake Provider 路径、Worker 不写 Canon / 不批准、失败 / 取消不删除、2.1–8.2 API 仍在）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `scene_dags`、`dag_nodes`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide / Style Validation / 审校队列 / jobs / Agent 表，不建批量 / 真实模型网关表。
+
+## 节点 8.3 边界
+
+- 输入：一场已批准可生成场景 + 指定 Canon Snapshot + 已有 3.3–6.1 作业类型。
+- 固定节点与依赖：context_pack → scene_plan → plan_validation → scene_draft → candidate_extraction 与 draft_validation（可并行）→ human_review → canon_commit（仅人类批准后）→ summary → downstream_unblock。
+- 每个节点声明 inputs / outputs / dependencies / failure policy / retryability。并行节点不得写同一资源。
+- 任一 blocker 立即停止后续自动 submit（含 canon_commit）。
+- 可从指定节点 rerun。默认复用已冻结上游输出。重建 Context Pack 必须显式 `rebuild_context_pack=true`。
+- 可视化 JSON：每节点 status 与 duration_ms。
+- `canon_commit` 仅在 human_review 批准且无 blocker 时调用既有 4.2 submit。不发明新的 Canon 写路径。无人类主编则不得跑 canon_commit。
+- 编排器管状态 / 输入 / 权限 / 批准；节点经 8.1 Worker / 8.2 PermissionGuard 无状态执行。
+- Worker **不得**批准 Candidate Change，**不得**提交 Canon，**不得**做审校队列人类裁决。无自动批准。
+- 失败 / 取消保留记录，不删除。无生产 seed-status HTTP 路由。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；完整 Prompt / 散文不得入审计。
+- 仅 Fake Provider / 内存仓库。禁止对 OpenAI / Anthropic 等发真实 HTTP。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–8.2 API。
+- **不是** 节点 8.4 批量、节点 9.x、自动批准、向量检索、真实模型供应商客户端、编排器自动写 Canon。

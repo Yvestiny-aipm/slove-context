@@ -51,7 +51,11 @@ are registered. The service layer re-checks permissions; unauthorized
 tools are 403. Agent Runs archive input/output refs, tool calls,
 cost, duration, and error. No Agent (including Worker / system) may
 bypass Approval to write Canon. Human Approver is the only
-Canon-approve actor. No DAG (8.3) or batch (8.4).
+Canon-approve actor.
+Node 8.3: single-scene DAG orchestrator. Fixed nodes dispatch
+through the 8.1 Worker. human_review / canon_commit wait.
+canon_commit calls existing 4.2 submit only after a human 主编
+approve. No 8.4 batch.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -89,6 +93,8 @@ from slove_context.context_pack.repository import (
     InMemoryContextPackRepository,
 )
 from slove_context.context_pack.routes import router as context_pack_router
+from slove_context.dags.repository import DagRepository, InMemoryDagRepository
+from slove_context.dags.routes import router as dags_router
 from slove_context.jobs.deps import services_from_state
 from slove_context.jobs.repository import InMemoryJobRepository, JobRepository
 from slove_context.jobs.routes import router as jobs_router
@@ -174,6 +180,7 @@ def create_app(
     review_queue_repository: ReviewQueueRepository | None = None,
     job_repository: JobRepository | None = None,
     agent_repository: AgentRepository | None = None,
+    dag_repository: DagRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -236,6 +243,7 @@ def create_app(
     application.state.agent_repository = (
         agent_repository or InMemoryAgentRunRepository()
     )
+    application.state.dag_repository = dag_repository or InMemoryDagRepository()
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -282,6 +290,7 @@ def create_app(
     application.include_router(review_queue_router)
     application.include_router(jobs_router)
     application.include_router(agents_router)
+    application.include_router(dags_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:
