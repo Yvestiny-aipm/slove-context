@@ -482,6 +482,10 @@ class CanonService:
     def get_snapshot(self, project_id: str, snapshot_id: str) -> CanonSnapshot:
         return self._get_snapshot(project_id, snapshot_id)
 
+    def list_snapshots(self, project_id: str) -> list[CanonSnapshot]:
+        self._require_project(project_id)
+        return self._repo.list_snapshots(project_id)
+
     def list_snapshot_facts(self, project_id: str, snapshot_id: str) -> list[CanonFact]:
         snapshot = self._get_snapshot(project_id, snapshot_id)
         return self._facts_for_ids(project_id, snapshot.fact_ids)

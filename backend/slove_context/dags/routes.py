@@ -84,6 +84,20 @@ def _raise(exc: DagServiceError) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
+@router.get("/projects/{project_id}/scenes/{scene_id}/dags")
+def list_scene_dags(request: Request, project_id: str, scene_id: str) -> dict[str, Any]:
+    try:
+        items = _service(request).list_for_scene(project_id, scene_id)
+    except DagServiceError as exc:
+        _raise(exc)
+    return {
+        "items": [item.to_public_dict() for item in items],
+        "writes_canon": False,
+        "auto_approved": False,
+        "auto_canon_commit": False,
+    }
+
+
 @router.post("/projects/{project_id}/scenes/{scene_id}/dags", status_code=201)
 def create_scene_dag(
     request: Request, project_id: str, scene_id: str, body: CreateDagBody

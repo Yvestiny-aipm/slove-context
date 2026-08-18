@@ -171,6 +171,10 @@ class ValidationService:
             raise ValidationServiceError(404, {"error": "validation_run_not_found"})
         return run
 
+    def list_runs(self, project_id: str) -> list[ValidationRun]:
+        self._require_project(project_id)
+        return self._repo.list_runs(project_id)
+
     def get_report(self, project_id: str, run_id: str) -> ValidationReport:
         run = self.get_run(project_id, run_id)
         report = None

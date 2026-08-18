@@ -104,6 +104,9 @@ class StoryService:
             raise StoryServiceError(404, {"error": "project_not_found"})
         return project
 
+    def list_projects(self) -> list[StoryProject]:
+        return self._repo.list_projects()
+
     def create_spec_draft(
         self,
         *,

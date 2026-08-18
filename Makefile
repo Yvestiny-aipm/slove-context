@@ -1,4 +1,4 @@
-.PHONY: test format typecheck lint check install migrate
+.PHONY: test format typecheck lint check install migrate frontend-test demo
 
 PYTHON ?= python3
 
@@ -14,10 +14,19 @@ install:
 # style validation + review queue + local job queue / Worker +
 # Agent registry / permissions + single-scene DAG + batch schedule +
 # node 9.1 narrative consistency evals + node 9.2 experiment runs +
-# node 9.3 release gates / book export)
+# node 9.3 release gates / book export + node UI.1 demo seeder / CORS)
 # and contracts/ (0.4). No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts
+
+# Headless vitest + testing-library. No live model. No browser window.
+frontend-test:
+	cd frontend && npm test
+
+# Seed Fake Provider Demo in-process and start backend + Vite UI.
+# Open http://127.0.0.1:5173 — not a production service.
+demo:
+	$(PYTHON) -m slove_context.demo --host 127.0.0.1 --port 8000 --with-frontend
 
 format:
 	$(PYTHON) -m ruff format backend tests

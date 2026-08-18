@@ -17,7 +17,8 @@ slove context
 | `backend/` | FastAPI 应用（`/healthz`、`/version`、2.1–9.3 API：含单场景 DAG、批量调度、实验运行与发布门 / 全书导出；无真实模型客户端）与 9.1 评测 runner |
 | `backend/alembic/` | 可审阅迁移至 `023_release`（单元测试不连库） |
 | `evals/` | 节点 9.1 叙事一致性评测案例 / 夹具 / 期望（确定性 runner，不写 Canon；9.2 只读引用） |
-| `tests/` | 进程内测试（含 8.4 批量调度、9.1 评测、9.2 实验运行与 9.3 发布门）；`make test` 也会跑 contracts 测试 |
+| `tests/` | 进程内测试（含 8.4 批量调度、9.1 评测、9.2 实验运行、9.3 发布门与 UI.1 Demo 播种）；`make test` 也会跑 contracts 测试 |
+| `frontend/` | 节点 UI.1 本地工作流 Demo（Vite + React + TypeScript；Fake Provider；无登录） |
 | `scripts/` | 脚本目录占位 |
 | `data/` | 本地数据占位（不提交密钥或模型输出） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） |
@@ -159,6 +160,32 @@ cd backend && alembic upgrade head
 - 每条 Run 记录完整配置、输入版本、输出引用、六项指标、token 成本与延迟。可与基线 Run 对比并导出 CSV / JSON。
 - 历史 Run 只读。改 prompt_version 出新 Run，未冻结 Prompt 不得覆盖旧记录。
 - 仅 Fake Provider。不写 Canon，不批准。不是 9.3 发布门。
+
+### 工作流前端 Demo（节点 UI.1）
+
+本地可点击的中文工作流 Demo。只读已落地 2.1–9.3 API，仅 Fake Provider。不是 10.x，不是真实模型集成。每页有横幅「Demo / Fake Provider / 非真实模型」。
+
+先播种并同时启动后端 + 前端：
+
+```bash
+make demo
+```
+
+浏览器打开 **http://127.0.0.1:5173**。后端在 `http://127.0.0.1:8000`。
+
+只播种、不启动服务：
+
+```bash
+python3 -m slove_context.demo --seed-only
+```
+
+播种是 CLI（`python -m slove_context.demo`），**不是**生产 seed-status HTTP。开发态 CORS 仅放行 Vite origin（`http://localhost:5173` / `http://127.0.0.1:5173`）；`SLOVE_ENV=production` 时不开放 `*`。审校「批准」走既有 7.3 / 4.2，不自动提交 Canon；「提交 Canon」是单独按钮。
+
+前端测试（无浏览器窗口、无真实模型）：
+
+```bash
+make frontend-test
+```
 
 ## 测试
 

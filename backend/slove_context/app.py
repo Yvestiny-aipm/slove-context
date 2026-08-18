@@ -79,6 +79,7 @@ seed-status route. Built-in /openapi.json is kept.
 """
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from slove_context import __version__
 from slove_context.agents.repository import (
@@ -103,6 +104,7 @@ from slove_context.context_pack.repository import (
     InMemoryContextPackRepository,
 )
 from slove_context.context_pack.routes import router as context_pack_router
+from slove_context.cors import cors_origins_for_env
 from slove_context.dags.repository import DagRepository, InMemoryDagRepository
 from slove_context.dags.routes import router as dags_router
 from slove_context.experiments.repository import (
@@ -228,9 +230,23 @@ def create_app(
     agent_run_auto_run: bool = True,
     job_timeout_s: float = 30.0,
     job_base_backoff_s: float = 0.0,
+    cors_origins: list[str] | None = None,
 ) -> FastAPI:
-    """Build the app. Tests inject in-memory repositories and an audit sink."""
+    """Build the app. Tests inject in-memory repositories and an audit sink.
+
+    Node UI.1: optional development CORS for the Vite origin. Production
+    does not open ``*``. There is no production seed-status route.
+    """
     application = FastAPI(title="slove-context", version=__version__)
+    origins = list(cors_origins) if cors_origins is not None else cors_origins_for_env()
+    if origins:
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=False,
+            allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["*"],
+        )
     application.add_middleware(RequestIdMiddleware)
     writer = audit_writer or AuditWriter(InMemoryAuditSink())
     application.state.repository = repository or InMemoryStoryRepository()

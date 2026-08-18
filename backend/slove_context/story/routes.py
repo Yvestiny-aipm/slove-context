@@ -60,6 +60,13 @@ def _raise(exc: StoryServiceError) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
+@router.get("/projects")
+def list_projects(request: Request) -> dict[str, Any]:
+    """Read-only list of the single Story Project. Not a seed-status route."""
+    items = _service(request).list_projects()
+    return {"items": [item.to_public_dict() for item in items]}
+
+
 @router.post("/projects", status_code=201)
 def create_project(request: Request, body: CreateProjectBody) -> dict[str, Any]:
     try:
