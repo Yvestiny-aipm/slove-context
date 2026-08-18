@@ -22,6 +22,9 @@ Canon and do not block Canon submit.
 Review-queue decisions (7.3) do not write Canon. Approving a
 Candidate Change on the queue reuses 4.2 approve only. Approving a
 Style Report is not Canon approval.
+Job queue / Worker (8.1) writes enqueue / cancel / rerun / dispatch
+transitions only. The Worker does not approve Candidate Changes and
+does not submit Canon.
 Auto-approve and multi-project are not MVP-normal (see docs/mvp-scope.md).
 Approving a Scene Card is not Canon approval.
 """
