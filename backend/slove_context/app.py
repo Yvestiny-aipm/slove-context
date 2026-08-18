@@ -60,7 +60,11 @@ Node 8.4: batch project/chapter scheduler. Multi-project ticks
 go through 8.3 DAG + 8.1 Worker + 8.2 PermissionGuard. Same-
 project enqueue requires approved dependencies. Pause + human
 alert on budget or consecutive failures. dry-run does not call
-the model. No auto Canon approve. No 9.x.
+the model. No auto Canon approve.
+Node 9.1: narrative consistency eval dataset and deterministic
+runner (no HTTP). Node 9.2: Experiment Run + baseline compare
+on the pinned 9.1 cases (Fake Provider only). Not a 9.3
+release gate. Experiments do not write Canon or approve.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -100,6 +104,11 @@ from slove_context.context_pack.repository import (
 from slove_context.context_pack.routes import router as context_pack_router
 from slove_context.dags.repository import DagRepository, InMemoryDagRepository
 from slove_context.dags.routes import router as dags_router
+from slove_context.experiments.repository import (
+    ExperimentRepository,
+    InMemoryExperimentRepository,
+)
+from slove_context.experiments.routes import router as experiments_router
 from slove_context.jobs.deps import services_from_state
 from slove_context.jobs.repository import InMemoryJobRepository, JobRepository
 from slove_context.jobs.routes import router as jobs_router
@@ -192,6 +201,7 @@ def create_app(
     agent_repository: AgentRepository | None = None,
     dag_repository: DagRepository | None = None,
     schedule_repository: ScheduleRepository | None = None,
+    experiment_repository: ExperimentRepository | None = None,
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
@@ -258,6 +268,9 @@ def create_app(
     application.state.schedule_repository = (
         schedule_repository or InMemoryScheduleRepository()
     )
+    application.state.experiment_repository = (
+        experiment_repository or InMemoryExperimentRepository()
+    )
     application.state.validation_rule_engine = (
         validation_rule_engine or DeterministicRuleEngine()
     )
@@ -306,6 +319,7 @@ def create_app(
     application.include_router(agents_router)
     application.include_router(dags_router)
     application.include_router(scheduler_router)
+    application.include_router(experiments_router)
 
     @application.get("/healthz")
     def healthz() -> dict[str, str]:

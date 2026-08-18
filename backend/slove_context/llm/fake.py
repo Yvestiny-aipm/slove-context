@@ -78,6 +78,13 @@ STYLE_VALIDATION_FIXTURES = {
     "style_validation_ok": "style_validation_ok.json",
 }
 
+# Node 9.2 Experiment Run fixtures. Placeholders, not product prose.
+EXPERIMENT_EVAL_FIXTURES = {
+    "experiment_eval": "experiment_eval_ok.json",
+    "experiment_eval_ok": "experiment_eval_ok.json",
+    "experiment_eval_invalid": "experiment_eval_invalid.json",
+}
+
 
 class FakeProvider(Provider):
     """Deterministic in-process provider. Safe to retry: no persist side effects."""
@@ -172,6 +179,8 @@ class FakeProvider(Provider):
 
 
 def _text_fixture_name(task_type: str) -> str:
+    if task_type in EXPERIMENT_EVAL_FIXTURES:
+        return EXPERIMENT_EVAL_FIXTURES[task_type]
     if task_type in STYLE_VALIDATION_FIXTURES:
         return STYLE_VALIDATION_FIXTURES[task_type]
     if task_type in CHAPTER_SUMMARY_FIXTURES:
@@ -192,6 +201,8 @@ def _text_fixture_name(task_type: str) -> str:
 
 
 def _structured_fixture_name(task_type: str) -> str:
+    if task_type in EXPERIMENT_EVAL_FIXTURES:
+        return EXPERIMENT_EVAL_FIXTURES[task_type]
     if task_type in STYLE_VALIDATION_FIXTURES:
         return STYLE_VALIDATION_FIXTURES[task_type]
     if task_type in EXTRACT_CANDIDATE_FIXTURES:

@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 9.1：叙事一致性评测数据格式与样本集（仅确定性 runner / 内存夹具）。不要启动节点 9.2 / 9.3。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。风格发现默认不阻断 Canon 提交。
+一次只实现一个已冻结节点。当前节点是 9.2：实验运行与基线对比（仅 Fake Provider / 内存仓库）。不要启动节点 9.3。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。不要改写 9.1 expected 答案。风格发现默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
-不要把未实现行为写成已完成。不要发明已落地的鉴权、9.2 实验对比、9.3 发布门、真实模型调用或生成器。节点 9.1 只做评测数据格式、样本与确定性 runner。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。canon_commit 仅在人类批准后调用既有 4.2 submit。评测 runner 不得写 Canon、不得批准。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、9.3 发布门、真实模型调用或生成器。节点 9.2 只做钉死 9.1 案例上的实验运行与基线对比。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。canon_commit 仅在人类批准后调用既有 4.2 submit。评测 runner 与实验运行不得写 Canon、不得批准。
 
 ## 已冻结、默认不可改
 
@@ -623,3 +623,29 @@ python -m slove_context.evals --out /tmp/narrative-eval.json
 - 失败 / 取消保留记录，不删除。
 - 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–8.4 API。
 - **不是** 节点 9.2 实验对比、节点 9.3 发布门、自动批准、向量检索、真实模型供应商客户端、改 5.x 硬规则或 3.4 生成作业。
+
+## 命令示例（节点 9.2）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实与 Snapshot API、Scene Card / 顺序 / 依赖、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限、单场景 DAG、批量调度、叙事一致性评测，以及实验运行（创建实验、替换五项配置、与基线对比六项指标、导出 CSV/JSON、未冻结 Prompt 不得覆盖历史 Run、不写 Canon / 不批准、2.1–9.1 API 仍在、无生产 seed-status、9.1 expected 未被改写）。不连 Postgres，不调用外部模型，无网络。`make migrate` 需要本地 Postgres，建 `experiments`、`experiment_runs`、`experiment_comparisons`。不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide / Style Validation / 审校队列 / jobs / Agent / DAG / 调度表，不建 9.3 / 真实模型网关表。
+
+## 节点 9.2 边界
+
+- 输入：已钉死的 9.1 Eval Case 集（case ids / case-set version / fixture 与 snapshot 引用哈希）+ 可替换配置。
+- 可替换：model、prompt_version、retrieval_strategy、temperature、max_tokens。
+- 每条 Experiment Run 记录完整配置、输入版本、输出引用（不是完整敏感散文）、六项指标、token 成本、延迟 / duration。
+- 与基线 Run 对比至少：Canon 冲突数、blocker 错误数、Schema 成功率、一次通过率、token cost、latency。
+- 导出 CSV 与 JSON。
+- 历史不可变：未冻结 Prompt 不得覆盖历史实验；改 prompt_version 出新 Run；禁止就地改已完成 Run 的配置或输出。
+- 确定性部分使用固定随机种子与 9.1 fixtures / Canon snapshots。
+- 实验 **不得**写 Canon，**不得**批准，**不得**调用真实模型。仅 Fake Provider。
+- 失败 / 取消保留记录，不删除。无生产 seed-status。
+- 写既有 `AuditWriter`，沿用 1.3 脱敏；完整 Prompt / 散文 / 正例 / 反例 / `text_evidence` 不得入审计。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1–9.1 API。
+- **不是** 节点 9.3 发布门 / 全书导出、自动批准、向量检索、真实模型供应商客户端、改 5.x 硬规则、改 3.4 生成作业、改写 9.1 expected 答案。

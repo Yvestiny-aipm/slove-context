@@ -1,0 +1,11 @@
+{
+  "text": "{\"ok\":true,\"kind\":\"experiment_eval\"}",
+  "prompt_version": "eval-experiment.v1",
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 8,
+    "total_tokens": 24,
+    "cost_amount": 0.02,
+    "cost_currency": "USD"
+  }
+}
