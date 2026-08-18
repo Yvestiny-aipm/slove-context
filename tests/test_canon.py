@@ -1,7 +1,7 @@
 """Canon entities / evidence / facts API (node 2.2).
 
 In-memory repository. No live Postgres. No model calls.
-No snapshot freeze / replay (node 2.3).
+Snapshot freeze / replay coverage lives in test_canon_snapshot.py (node 2.3).
 """
 
 from __future__ import annotations
@@ -122,8 +122,9 @@ def test_healthz_version_and_21_apis_still_present() -> None:
     assert "/projects/{project_id}/canon-facts/{fact_id}/approve" in paths
     assert "/projects/{project_id}/canon-facts/{fact_id}/abandon" in paths
     assert "/projects/{project_id}/canon-facts/{fact_id}/supersede" in paths
-    assert "/projects/{project_id}/canon-snapshots" not in paths
-    assert not any("replay" in path or "freeze" in path for path in paths)
+    assert "/projects/{project_id}/canon-snapshots" in paths
+    assert "/projects/{project_id}/canon-snapshots/{snapshot_id}/freeze" in paths
+    assert "/projects/{project_id}/canon-replay" in paths
 
 
 def test_create_and_list_generic_entities() -> None:
@@ -535,11 +536,11 @@ def test_story_spec_approve_is_unchanged() -> None:
     assert listed.json()["facts"] == []
 
 
-def test_canon_tables_migration_exists_without_replay_or_vector() -> None:
+def test_canon_tables_migration_exists_without_vector() -> None:
     versions = ROOT / "backend" / "alembic" / "versions"
-    files = list(versions.glob("*canon*.py"))
-    assert files, "expected a reviewable Canon Alembic revision"
-    text = "\n".join(path.read_text(encoding="utf-8") for path in files)
+    create = versions / "003_create_canon_tables.py"
+    assert create.is_file(), "expected a reviewable Canon Alembic revision"
+    text = create.read_text(encoding="utf-8")
     for table in (
         "CREATE TABLE entities",
         "CREATE TABLE canon_facts",
@@ -552,8 +553,8 @@ def test_canon_tables_migration_exists_without_replay_or_vector() -> None:
     lowered_sql = upgrade.lower()
     assert "vector(" not in lowered_sql
     assert "embedding" not in lowered_sql
-    assert "replay" not in lowered_sql
-    assert "freeze" not in lowered_sql
+    assert "CREATE TABLE canon_snapshots" in text
+    assert "DROP TABLE canon_snapshots" in text
     audit = (versions / "001_create_audit_events.py").read_text(encoding="utf-8")
     assert "CREATE TABLE audit_events" in audit
 

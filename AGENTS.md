@@ -1,10 +1,10 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 2.2：最小 Canon 数据模型与 API。不要启动节点 2.3（不要做快照冻结作业或回放接口；`canon_snapshots` 只建表）。
+一次只实现一个已冻结节点。当前节点是 2.3：Canon Snapshot 冻结与回放查询。不要启动节点 3.1（不要做 Scene Card）。不要实现 Context Pack 或生成器。不要加入向量检索或 LLM。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。  
-不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、模型调用或节点 2.3 快照回放。
+不要把未实现行为写成已完成。不要发明已落地的鉴权、队列、模型调用、Scene Card、Context Pack 或生成器。
 
 ## 已冻结、默认不可改
 
@@ -119,3 +119,25 @@ cd backend && alembic upgrade head
 - **不是** 向量检索、图数据库、自动抽取、LLM / 模型调用。
 - **不是** 把角色 / 场景做成小说写作产品（实体只是通用对象）。
 - **不是** 节点 2.3 的快照冻结 / 回放。
+
+## 命令示例（节点 2.3）
+
+```bash
+make test
+make migrate
+# 或
+cd backend && alembic upgrade head
+```
+
+`make test` 覆盖 `/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon 事实 API，以及 Canon Snapshot（创建、仅人工主编冻结、按 snapshot_id 查询、稳定排序 diff、回放、后期新事实不得泄漏进更早快照）；不连 Postgres，不调用外部模型。`make migrate` 需要本地 Postgres，在 2.2 的 `canon_snapshots` 上增量加 `fact_ids`、`frozen_at`、`as_of_scene_seq`、`as_of_story_time`、`status`。不重建 Canon 表，不建 Scene Card / Context Pack 表。
+
+## 节点 2.3 边界
+
+- Canon Snapshot 创建、冻结、按 snapshot_id 查询可见事实、两快照 diff、回放查询。
+- 快照是某时刻只读副本，不代替当前 Canon。按 snapshot_id 的查询只看该快照捕获的事实，不看 live Canon。
+- 已冻结快照只读：事实列表不得再改。仅人工主编可冻结（`X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent 不可。无自动批准。
+- Diff 输出稳定排序（fact id，然后 predicate）：added / removed / superseded。
+- 回放：`snapshot_id` 加 `scene_id` 或 `as_of_story_time`，只返回该快照内当时应可见的 Canon。后期新批准事实不得泄漏进更早快照。
+- 写操作走既有 `AuditWriter`（1.3），沿用默认脱敏。
+- 保留 `GET /healthz`、`GET /version`、`audit_events`、节点 2.1 Story Project / Spec API、节点 2.2 Canon Fact API（live `GET /canon-facts` 仍是当前 Canon）。
+- **不是** Scene Card（节点 3.1）、Context Pack、生成器、向量检索、LLM / 模型调用。

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from slove_context.canon.models import CanonFact, Entity, EvidenceRecord
+from slove_context.canon.models import CanonFact, CanonSnapshot, Entity, EvidenceRecord
 
 
 class CanonRepository(Protocol):
@@ -30,6 +30,12 @@ class CanonRepository(Protocol):
 
     def save_fact(self, fact: CanonFact) -> None: ...
 
+    def add_snapshot(self, snapshot: CanonSnapshot) -> None: ...
+
+    def get_snapshot(self, snapshot_id: str) -> CanonSnapshot | None: ...
+
+    def save_snapshot(self, snapshot: CanonSnapshot) -> None: ...
+
 
 class InMemoryCanonRepository:
     """Fake repository for API tests. Does not open Postgres."""
@@ -38,6 +44,7 @@ class InMemoryCanonRepository:
         self.entities: dict[str, Entity] = {}
         self.evidence: dict[str, EvidenceRecord] = {}
         self.facts: dict[str, CanonFact] = {}
+        self.snapshots: dict[str, CanonSnapshot] = {}
 
     def add_entity(self, entity: Entity) -> None:
         self.entities[entity.id] = entity
@@ -79,3 +86,12 @@ class InMemoryCanonRepository:
 
     def save_fact(self, fact: CanonFact) -> None:
         self.facts[fact.id] = fact
+
+    def add_snapshot(self, snapshot: CanonSnapshot) -> None:
+        self.snapshots[snapshot.id] = snapshot
+
+    def get_snapshot(self, snapshot_id: str) -> CanonSnapshot | None:
+        return self.snapshots.get(snapshot_id)
+
+    def save_snapshot(self, snapshot: CanonSnapshot) -> None:
+        self.snapshots[snapshot.id] = snapshot

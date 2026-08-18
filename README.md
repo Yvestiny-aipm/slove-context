@@ -3,7 +3,7 @@ slove context
 
 本地单机、一个故事项目、一名用户（创作者兼主编）、仅中文。候选变更须经人类主编批准或拒绝后才能提交 Canon。自动批准与多项目不是 MVP 正常行为。
 
-节点 1.1 建立了本地单体仓库骨架。节点 1.2 在此基础上提供可运行的本地 Postgres 与 FastAPI `/healthz` / `/version`。节点 1.3 增加请求 `request_id`、JSON 结构化日志、以及 `audit_events` 迁移与通用审计写入接口。节点 2.1 增加唯一 Story Project 与 Story Spec 草稿 / 提交 / 人工批准 / 修订版本。节点 2.2 增加最小 Canon 实体 / 证据 / 事实 API（只追加，supersede 更正）。本仓库没有用户鉴权、队列或模型调用。Spec 批准不是 Canon 批准。`canon_snapshots` 只建表，没有冻结作业或回放接口。
+节点 1.1 建立了本地单体仓库骨架。节点 1.2 在此基础上提供可运行的本地 Postgres 与 FastAPI `/healthz` / `/version`。节点 1.3 增加请求 `request_id`、JSON 结构化日志、以及 `audit_events` 迁移与通用审计写入接口。节点 2.1 增加唯一 Story Project 与 Story Spec 草稿 / 提交 / 人工批准 / 修订版本。节点 2.2 增加最小 Canon 实体 / 证据 / 事实 API（只追加，supersede 更正）。节点 2.3 增加 Canon Snapshot 创建、冻结、按 snapshot_id 查询、diff 与回放。本仓库没有用户鉴权、队列或模型调用。Spec 批准不是 Canon 批准。快照不代替当前 Canon。没有 Scene Card、Context Pack 或生成器。
 
 **包管理：只用 venv**（`python3 -m venv` + `pip`）。不要加入 Poetry 或 uv。
 
@@ -14,15 +14,15 @@ slove context
 | `AGENTS.md` | 实现约定（八条规则）与常用命令示例 |
 | `docs/` | 已冻结范围 / 术语 / 状态机，骨架边界 `architecture.md`，以及 `audit.md` |
 | `contracts/` | 已批准 JSON Schema（节点 0.4） |
-| `backend/` | FastAPI 应用（`/healthz`、`/version`、request_id、JSON 日志、审计写入、Story Project / Spec、最小 Canon API） |
-| `backend/alembic/` | 可审阅的 `audit_events`、Story Project / Spec 与 Canon 表迁移（单元测试不连库） |
-| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon 的进程内测试；`make test` 也会跑 contracts 测试 |
+| `backend/` | FastAPI 应用（`/healthz`、`/version`、request_id、JSON 日志、审计写入、Story Project / Spec、最小 Canon API、Canon Snapshot） |
+| `backend/alembic/` | 可审阅的 `audit_events`、Story Project / Spec、Canon 表与 snapshot 列迁移（单元测试不连库） |
+| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon、Snapshot 的进程内测试；`make test` 也会跑 contracts 测试 |
 | `scripts/` | 脚本目录占位 |
 | `data/` | 本地数据占位（不提交密钥或模型输出） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） |
 | `.env.example` | 环境变量名与安全注释（含 Postgres 占位） |
 
-## 本地开始（节点 1.2 + 1.3 + 2.1 + 2.2）
+## 本地开始（节点 1.2 + 1.3 + 2.1 + 2.2 + 2.3）
 
 只用 **venv**。复制 `.env.example` 为 `.env`。不要填入真实密钥，也不要把 `.env` 提交到 Git。
 
@@ -39,7 +39,7 @@ docker compose up -d postgres
 docker compose ps
 ```
 
-等到 `postgres` 为 healthy。数据落在命名卷 `postgres_data`。`audit_events`、Story Project / Spec 与 Canon 表用 Alembic 建（见下方「迁移」）；单元测试不跑迁移、不连库。`canon_snapshots` 只建表，没有冻结 / 回放实现。
+等到 `postgres` 为 healthy。数据落在命名卷 `postgres_data`。`audit_events`、Story Project / Spec、Canon 表与 snapshot 列用 Alembic 建（见下方「迁移」）；单元测试不跑迁移、不连库。`canon_snapshots` 在 2.2 建表，2.3 增量加冻结 / 回放列。
 
 ### 运行后端
 
@@ -66,7 +66,7 @@ curl -s http://127.0.0.1:8000/version
 
 `/healthz` 应返回 `{"status":"ok"}`。`/version` 返回带版本字符串的 JSON。响应带 `X-Request-ID`。若请求已带该头，则原样回传。
 
-节点 1.1 的骨架步骤（克隆、复制 `.env.example`、venv、`make test`）仍然适用；1.2 在其上增加了 Postgres 与上述两个路由；1.3 增加 request_id、JSON 日志与审计框架；2.1 增加 Story Project / Spec API；2.2 增加最小 Canon API。批准 Spec 或批准 / 废弃 / supersede Canon 事实必须带显式人类演员（如 `X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent 不能批准。创建第二个项目会被拒绝。已批准 Spec 不能就地 PATCH，必须 `POST .../drafts` 出新修订版本。Active Canon 事实不能就地改写，必须 `POST .../supersede`。
+节点 1.1 的骨架步骤（克隆、复制 `.env.example`、venv、`make test`）仍然适用；1.2 在其上增加了 Postgres 与上述两个路由；1.3 增加 request_id、JSON 日志与审计框架；2.1 增加 Story Project / Spec API；2.2 增加最小 Canon API；2.3 增加 Canon Snapshot 冻结与回放。批准 Spec、批准 / 废弃 / supersede Canon 事实、或冻结 Snapshot 必须带显式人类演员（如 `X-Actor-Type: human_editor`）。系统 / 生成 Agent / 审校 Agent 不能批准或冻结。创建第二个项目会被拒绝。已批准 Spec 不能就地 PATCH，必须 `POST .../drafts` 出新修订版本。Active Canon 事实不能就地改写，必须 `POST .../supersede`。已冻结 Snapshot 只读。
 
 ### 日志长什么样
 
@@ -80,7 +80,7 @@ curl -s http://127.0.0.1:8000/version
 
 ### 迁移
 
-迁移文件在 `backend/alembic/versions/`。节点 1.3：`001_create_audit_events.py`。节点 2.1：`002_create_story_project_and_spec.py`（`story_projects`、`story_specs`、`story_spec_versions`）。节点 2.2：`003_create_canon_tables.py`（`entities`、`evidence_records`、`canon_facts`、`canon_fact_versions`、`canon_snapshots`）。无向量列，无回放作业。
+迁移文件在 `backend/alembic/versions/`。节点 1.3：`001_create_audit_events.py`。节点 2.1：`002_create_story_project_and_spec.py`（`story_projects`、`story_specs`、`story_spec_versions`）。节点 2.2：`003_create_canon_tables.py`（`entities`、`evidence_records`、`canon_facts`、`canon_fact_versions`、`canon_snapshots`）。节点 2.3：`004_canon_snapshot_columns.py`（给 `canon_snapshots` 加 `fact_ids`、`frozen_at`、`as_of_scene_seq`、`as_of_story_time`、`status`）。无向量列，无 Scene Card 表。
 
 本地对 Postgres 建表（单元测试不需要这一步）：
 
@@ -101,7 +101,7 @@ make test
 python3 -m pytest tests contracts
 ```
 
-`tests/test_healthz.py` 用 FastAPI `TestClient` 在进程内检查 `/healthz`（以及 `/version`）。`tests/test_request_id.py` 检查 `X-Request-ID` 与 JSON 请求日志字段。`tests/test_audit.py` 检查审计写入与脱敏。`tests/test_story_project_spec.py` 检查 Story Project / Spec（schema 422、未批准不得当作已批准、已批准禁止 PATCH）。`tests/test_canon.py` 检查 Canon 实体 / 证据 / 事实（NotInCanon 创建、仅人工主编批准或废弃、故事时间查询、supersede 只追加）。不启动 Docker，不调用模型。同一命令会收集 `contracts/` 下已批准 Schema 的校验测试。
+`tests/test_healthz.py` 用 FastAPI `TestClient` 在进程内检查 `/healthz`（以及 `/version`）。`tests/test_request_id.py` 检查 `X-Request-ID` 与 JSON 请求日志字段。`tests/test_audit.py` 检查审计写入与脱敏。`tests/test_story_project_spec.py` 检查 Story Project / Spec（schema 422、未批准不得当作已批准、已批准禁止 PATCH）。`tests/test_canon.py` 检查 Canon 实体 / 证据 / 事实（NotInCanon 创建、仅人工主编批准或废弃、故事时间查询、supersede 只追加）。`tests/test_canon_snapshot.py` 检查 Snapshot 创建 / 冻结 / 查询 / diff / 回放（后期新事实不得泄漏、仅人类冻结、稳定排序）。不启动 Docker，不调用模型。同一命令会收集 `contracts/` 下已批准 Schema 的校验测试。
 
 结束实现前按 `AGENTS.md`：格式化、类型检查、测试。
 
