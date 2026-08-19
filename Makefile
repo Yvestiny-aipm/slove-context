@@ -15,7 +15,7 @@ install:
 # Agent registry / permissions + single-scene DAG + batch schedule +
 # node 9.1 narrative consistency evals + node 9.2 experiment runs +
 # node 9.3 release gates / book export + node UI.1 demo seeder / CORS +
-# node UI.2 human shuttle)
+# node UI.2 human shuttle + node UI.3 summary shuttle)
 # and contracts/ (0.4). No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts

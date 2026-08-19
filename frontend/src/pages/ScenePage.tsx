@@ -8,6 +8,8 @@ import {
   shuttleDraftsPath,
   shuttleExtractPromptPath,
   shuttleExtractsPath,
+  shuttleSceneSummariesPath,
+  shuttleSceneSummaryPromptPath,
   textOf,
 } from "../api";
 
@@ -38,8 +40,10 @@ export function ScenePage({ projectId }: { projectId: string }) {
   const [plan, setPlan] = useState<Record<string, unknown>>({});
   const [drafts, setDrafts] = useState<Record<string, unknown>[]>([]);
   const [candidates, setCandidates] = useState<Record<string, unknown>[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, unknown>[]>([]);
   const [draftPaste, setDraftPaste] = useState("");
   const [extractPaste, setExtractPaste] = useState("");
+  const [summaryPaste, setSummaryPaste] = useState("");
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
@@ -92,10 +96,23 @@ export function ScenePage({ projectId }: { projectId: string }) {
             ),
           ).items,
         );
+        let nextSummaries: Record<string, unknown>[] = [];
+        try {
+          nextSummaries = asList(
+            asRecord(
+              await apiGet(
+                `/projects/${projectId}/scenes/${selected}/summaries`,
+              ),
+            ).items,
+          );
+        } catch {
+          nextSummaries = [];
+        }
         if (!cancelled) {
           setPlan(nextPlan);
           setDrafts(nextDrafts);
           setCandidates(nextCandidates);
+          setSummaries(nextSummaries);
         }
       } catch (err) {
         if (!cancelled) setError(String(err));
@@ -195,11 +212,49 @@ export function ScenePage({ projectId }: { projectId: string }) {
     }
   }
 
+  async function copySummaryPrompt() {
+    if (!selected || !currentDraftId) {
+      setError("没有可摘要的草稿修订");
+      return;
+    }
+    try {
+      const payload = asRecord(
+        await apiGet(
+          shuttleSceneSummaryPromptPath(projectId, selected, currentDraftId),
+        ),
+      );
+      await copyText(textOf(payload.prompt));
+      setFeedback("已复制本场摘要提示词");
+      setError("");
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function pasteSummary() {
+    if (!selected || !currentDraftId) {
+      setError("没有可摘要的草稿修订");
+      return;
+    }
+    try {
+      await apiPost(shuttleSceneSummariesPath(projectId, selected), {
+        draft_revision_id: currentDraftId,
+        body: summaryPaste,
+      });
+      setSummaryPaste("");
+      setFeedback("已贴回本场摘要（未批准，未写 Canon）");
+      setError("");
+      setReloadToken((value) => value + 1);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
   return (
     <section>
       <h2>当前场景</h2>
       <p className="muted">
-        写稿和抽取可拷到你自己的模型，不经 API
+        写稿、抽取和摘要可拷到你自己的模型，不经 API
       </p>
       {error ? <p className="error">{error}</p> : null}
       {feedback ? <p className="muted">{feedback}</p> : null}
@@ -250,6 +305,18 @@ export function ScenePage({ projectId }: { projectId: string }) {
         <button type="button" onClick={() => void pasteExtract()}>
           贴回抽取（JSON 数组）
         </button>
+        <button type="button" onClick={() => void copySummaryPrompt()}>
+          复制本场摘要提示词
+        </button>
+        <textarea
+          value={summaryPaste}
+          onChange={(event) => setSummaryPaste(event.target.value)}
+          placeholder="把外部模型返回的本场摘要贴在这里"
+          rows={4}
+        />
+        <button type="button" onClick={() => void pasteSummary()}>
+          贴回本场摘要
+        </button>
       </div>
       <h3>Scene Plan</h3>
       <pre>{planBody.id ? JSON.stringify(planBody, null, 2) : "尚无计划"}</pre>
@@ -258,6 +325,17 @@ export function ScenePage({ projectId }: { projectId: string }) {
         <div key={textOf(draft.id)} className="card">
           <p>修订 {textOf(draft.revision)} / {textOf(draft.status)}</p>
           <pre>{textOf(draft.body)}</pre>
+        </div>
+      ))}
+      <h3>本场摘要</h3>
+      {summaries.length === 0 ? <p className="muted">尚无摘要</p> : null}
+      {summaries.map((item) => (
+        <div key={textOf(item.id)} className="card">
+          <p>
+            修订 {textOf(item.revision)} / {textOf(item.status)} /{" "}
+            {textOf(item.generation_model)}
+          </p>
+          <pre>{textOf(item.body)}</pre>
         </div>
       ))}
       <h3>候选变更</h3>

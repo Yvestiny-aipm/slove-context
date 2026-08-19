@@ -716,3 +716,27 @@ make frontend-test
 - 场景页四个控件只打 shuttle 路径，不打 `drafts/jobs` / `extract-jobs`。
 - **不得**调用真实模型、写入 API Key、自动批准 / 自动提交 Canon、改 3.4 Fake 生成作业、改写 9.1 expected / 9.2 历史语义，或新增生产 seed-status HTTP。
 - 发布 / 穿梭路径都 **没有写 Canon**。
+
+## 命令示例（节点 UI.3）
+
+主编摘要穿梭：拷场景 / 章摘要提示词到自己订阅的模型，再把短摘要贴回。不经本仓库 API。4.3 Fake `summaries/jobs` 保持原样。
+
+```bash
+make format
+make lint
+make typecheck
+make test
+make frontend-test
+```
+
+`make test` 覆盖既有 2.1–9.3 / UI.1 / UI.2 进程内测试，以及 UI.3 摘要穿梭（场景摘要贴回 `generation_model=external-subscribed`、正文过短 422、非 human_editor 403、不调 Gateway / Fake、不写 Canon、旧修订 Superseded、章摘要缺场 409、幂等、4.3 Fake `summaries/jobs` 仍可用）。不连 Postgres，不调用外部模型，无网络。无生产 seed-status HTTP。
+
+## 节点 UI.3 边界
+
+- 四条路由：`GET .../scenes/{id}/shuttle/summary-prompt`、`POST .../scenes/{id}/shuttle/summaries`、`GET .../chapters/{id}/shuttle/summary-prompt`、`POST .../chapters/{id}/shuttle/summaries`。仅 `human_editor`。
+- 场景摘要提示词复用 `prompts/scene_summary.v1.md` + 指定草稿修订正文，中文，无 LLM。不创建摘要。
+- 贴回场景摘要：空白剥离后满 40 字才落不可变修订；必须绑定已有 `draft_revision_id`；`generation_model=external-subscribed`，`prompt_version=scene_summary.shuttle.v1`，状态 Generated。旧修订 Superseded，不就地改。
+- 章摘要只能汇总该章已有 Scene Summary；缺一场或 `source_scene_summary_revision_ids` 不齐 → 409，不得编造。贴回 `prompt_version=chapter_summary.shuttle.v1`。
+- 场景页两个控件只打 shuttle 路径，不打 `summaries/jobs`。无新页面。无章页则只保留 API。
+- **不得**调用真实模型、写入 API Key、自动批准 / 自动提交 Canon、改 4.3 Fake 作业、改 9.3 发布门、改写 9.1 expected / 9.2 历史语义，或新增生产 seed-status HTTP。
+- 发布 / 穿梭路径都 **没有写 Canon**。
