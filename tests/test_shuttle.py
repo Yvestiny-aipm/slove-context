@@ -24,6 +24,7 @@ SYSTEM = {"X-Actor-Type": "system", "X-Actor-Id": "sys-1"}
 SHUTTLE_PROSE = (
     "河滩风冷，林晚看见一点光，伸手拾起残玉。"
     "她把玉握在掌心，没有追问来历，只记住这一夜的潮声。"
+    "风从芦苇里穿过，她把残玉收进袖中，继续沿河走下去。"
 )
 EVIDENCE_QUOTE = "伸手拾起残玉"
 

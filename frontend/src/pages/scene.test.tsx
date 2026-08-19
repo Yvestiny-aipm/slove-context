@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   fakeDraftJobsPath,
@@ -111,11 +111,11 @@ describe("scene shuttle buttons hit shuttle paths, not Fake jobs", () => {
     expect(await screen.findByText("已复制抽取提示词")).toBeInTheDocument();
 
     const extractBox = screen.getByPlaceholderText("贴回抽取（JSON 数组）");
-    await user.clear(extractBox);
-    await user.type(
-      extractBox,
-      '[{{"subject":"林晚","predicate":"持有","object":"残玉"}}]',
-    );
+    fireEvent.change(extractBox, {
+      target: {
+        value: '[{"subject":"林晚","predicate":"持有","object":"残玉"}]',
+      },
+    });
     await user.click(screen.getByRole("button", { name: "贴回抽取（JSON 数组）" }));
     expect(
       await screen.findByText("已贴回抽取（Extracted，未批准，未写 Canon）"),
