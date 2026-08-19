@@ -3,10 +3,13 @@ import userEvent from "@testing-library/user-event";
 import {
   fakeDraftJobsPath,
   fakeExtractJobsPath,
+  fakeSceneSummaryJobsPath,
   shuttleDraftPromptPath,
   shuttleDraftsPath,
   shuttleExtractPromptPath,
   shuttleExtractsPath,
+  shuttleSceneSummariesPath,
+  shuttleSceneSummaryPromptPath,
 } from "../api";
 import { ScenePage } from "./ScenePage";
 
@@ -38,13 +41,21 @@ const DRAFT = {
 };
 
 describe("scene shuttle buttons hit shuttle paths, not Fake jobs", () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+
+  beforeEach(() => {
+    writeText.mockReset();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it("the four shuttle controls use shuttle routes only", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/scenes")) {
@@ -157,5 +168,103 @@ describe("scene shuttle buttons hit shuttle paths, not Fake jobs", () => {
         return url.includes("/shuttle/");
       }),
     ).toBe(true);
+  });
+
+  it("summary shuttle controls use shuttle routes, not Fake jobs", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/scenes")) {
+        return jsonResponse({ scenes: [SCENE] });
+      }
+      if (url.includes("/plans/current")) {
+        return jsonResponse({
+          snapshot_id: "snap-1",
+          plan: { id: "plan-1" },
+        });
+      }
+      if (url.includes("/drafts") && !url.includes("/shuttle")) {
+        return jsonResponse({ items: [DRAFT] });
+      }
+      if (url.includes("/candidate-changes")) {
+        return jsonResponse({ items: [] });
+      }
+      if (url.includes("/summaries") && !url.includes("/shuttle")) {
+        return jsonResponse({ items: [] });
+      }
+      if (
+        url.includes(
+          shuttleSceneSummaryPromptPath("proj-1", "scene-1", "draft-1"),
+        )
+      ) {
+        return jsonResponse({
+          prompt: "只输出这一场的短摘要。不得写 Canon。",
+          purpose: "scene_summary",
+          scene_id: "scene-1",
+          draft_revision_id: "draft-1",
+          is_canon: false,
+        });
+      }
+      if (url.includes(shuttleSceneSummariesPath("proj-1", "scene-1"))) {
+        return jsonResponse({
+          summary: {
+            id: "sum-1",
+            status: "Generated",
+            generation_model: "external-subscribed",
+            prompt_version: "scene_summary.shuttle.v1",
+          },
+          writes_canon: false,
+        });
+      }
+      return jsonResponse({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<ScenePage projectId="proj-1" />);
+
+    await screen.findByRole("button", { name: "复制本场摘要提示词" });
+    await user.click(screen.getByRole("button", { name: "复制本场摘要提示词" }));
+    expect(await screen.findByText("已复制本场摘要提示词")).toBeInTheDocument();
+
+    const box = screen.getByPlaceholderText(
+      "把外部模型返回的本场摘要贴在这里",
+    );
+    fireEvent.change(box, {
+      target: {
+        value: "林晚在河滩拾得残玉，未追问来历，只记住潮声。",
+      },
+    });
+    await user.click(screen.getByRole("button", { name: "贴回本场摘要" }));
+    expect(
+      await screen.findByText("已贴回本场摘要（未批准，未写 Canon）"),
+    ).toBeInTheDocument();
+
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(
+      urls.some((url) =>
+        url.includes(
+          shuttleSceneSummaryPromptPath("proj-1", "scene-1", "draft-1"),
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      urls.some((url) =>
+        url.includes(shuttleSceneSummariesPath("proj-1", "scene-1")),
+      ),
+    ).toBe(true);
+    expect(
+      urls.some((url) =>
+        url.includes(fakeSceneSummaryJobsPath("proj-1", "scene-1")),
+      ),
+    ).toBe(false);
+
+    const mutating = fetchMock.mock.calls.filter(([, init]) => {
+      const method = init && "method" in init ? String(init.method) : "GET";
+      return method === "POST";
+    });
+    expect(mutating).toHaveLength(1);
+    expect(String(mutating[0]?.[0])).toContain(
+      shuttleSceneSummariesPath("proj-1", "scene-1"),
+    );
+    expect(String(mutating[0]?.[0])).not.toContain("/summaries/jobs");
   });
 });

@@ -67,8 +67,9 @@ on the pinned 9.1 cases (Fake Provider only). Node 9.3: release
 gates and formal book export (read-only checks; no new prose).
 Release does not write Canon or approve.
 Node UI.2 adds a human shuttle (copy prompt / paste result).
-Shuttle does not call Gateway / Fake / vendor HTTP and does not
-write Canon.
+Node UI.3 adds scene / chapter summary shuttle doors on the same
+path. Shuttle does not call Gateway / Fake / vendor HTTP and does
+not write Canon.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,

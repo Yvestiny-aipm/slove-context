@@ -60,6 +60,24 @@ export function shuttleExtractsPath(
   return `/projects/${projectId}/scenes/${sceneId}/drafts/${revisionId}/shuttle/extracts`;
 }
 
+export function shuttleSceneSummaryPromptPath(
+  projectId: string,
+  sceneId: string,
+  draftRevisionId: string,
+): string {
+  const query = new URLSearchParams({
+    draft_revision_id: draftRevisionId,
+  });
+  return `/projects/${projectId}/scenes/${sceneId}/shuttle/summary-prompt?${query.toString()}`;
+}
+
+export function shuttleSceneSummariesPath(
+  projectId: string,
+  sceneId: string,
+): string {
+  return `/projects/${projectId}/scenes/${sceneId}/shuttle/summaries`;
+}
+
 export function fakeDraftJobsPath(projectId: string, sceneId: string): string {
   return `/projects/${projectId}/scenes/${sceneId}/drafts/jobs`;
 }
@@ -70,6 +88,13 @@ export function fakeExtractJobsPath(
   revisionId: string,
 ): string {
   return `/projects/${projectId}/scenes/${sceneId}/drafts/${revisionId}/extract-jobs`;
+}
+
+export function fakeSceneSummaryJobsPath(
+  projectId: string,
+  sceneId: string,
+): string {
+  return `/projects/${projectId}/scenes/${sceneId}/summaries/jobs`;
 }
 
 async function parse(response: Response): Promise<unknown> {

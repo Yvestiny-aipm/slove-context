@@ -1,7 +1,8 @@
-"""Deterministic Chinese shuttle prompts (node UI.2).
+"""Deterministic Chinese shuttle prompts (nodes UI.2 / UI.3).
 
-Assembled from Scene Card / Spec / Snapshot excerpts. No LLM.
-Filled prompts are not written to logs or audit (1.3 redaction).
+Assembled from Scene Card / Spec / Snapshot excerpts / existing
+draft or scene-summary bodies. No LLM. Filled prompts are not
+written to logs or audit (1.3 redaction).
 """
 
 from __future__ import annotations
@@ -11,6 +12,11 @@ from typing import Any
 from slove_context.scene.models import Scene
 from slove_context.scene_draft.models import SceneDraft
 from slove_context.story.models import StorySpecVersion
+from slove_context.summary.models import SceneSummary
+from slove_context.summary.prompt import (
+    load_chapter_prompt_template,
+    load_scene_prompt_template,
+)
 
 
 def build_draft_prompt(
@@ -80,6 +86,65 @@ def build_extract_prompt(*, scene: Scene, draft: SceneDraft) -> str:
             draft.body,
             "",
             "只输出 JSON 数组。候选不是真相。不得写 Canon。",
+        ]
+    )
+
+
+def build_scene_summary_prompt(*, scene: Scene, draft: SceneDraft) -> str:
+    """Chinese scene-summary prompt. Reuses scene_summary.v1 + draft body."""
+    template = load_scene_prompt_template().rstrip()
+    return "\n".join(
+        [
+            template,
+            "",
+            "## 本场草稿修订（只读，禁止改写）",
+            f"场景 id：{scene.id}",
+            f"草稿修订 id：{draft.id}",
+            f"草稿修订号：{draft.revision}",
+            f"草稿内容哈希：{draft.content_hash}",
+            f"草稿状态：{draft.status}",
+            "",
+            "草稿正文：",
+            draft.body,
+            "",
+            "只输出这一场的短摘要。不得写 Canon。不得生成新散文。不得抽取候选。",
+        ]
+    )
+
+
+def build_chapter_summary_prompt(
+    *,
+    chapter_id: str,
+    scene_summaries: list[SceneSummary],
+) -> str:
+    """Chinese chapter-summary prompt. Reuses chapter_summary.v1 + scene summaries."""
+    template = load_chapter_prompt_template().rstrip()
+    blocks: list[str] = []
+    for item in scene_summaries:
+        blocks.extend(
+            [
+                f"场景 id：{item.scene_id}",
+                f"场景摘要修订 id：{item.id}",
+                f"修订号：{item.revision}",
+                f"内容哈希：{item.content_hash}",
+                f"来源草稿修订 id：{item.source_draft_revision_id}",
+                "摘要正文：",
+                item.body,
+                "",
+            ]
+        )
+    source_block = "\n".join(blocks).rstrip() if blocks else "（无场景摘要）"
+    source_ids = "、".join(item.id for item in scene_summaries) or "无"
+    return "\n".join(
+        [
+            template,
+            "",
+            f"## 本章已有场景摘要（只读，chapter_id={chapter_id}）",
+            f"所用场景摘要修订 id：{source_ids}",
+            "",
+            source_block,
+            "",
+            "只输出由已有场景摘要汇总而成的短章摘要。不得生成整章散文。不得写 Canon。",
         ]
     )
 
