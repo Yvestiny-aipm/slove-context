@@ -41,13 +41,21 @@ const DRAFT = {
 };
 
 describe("scene shuttle buttons hit shuttle paths, not Fake jobs", () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+
+  beforeEach(() => {
+    writeText.mockReset();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it("the four shuttle controls use shuttle routes only", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/scenes")) {
@@ -163,8 +171,6 @@ describe("scene shuttle buttons hit shuttle paths, not Fake jobs", () => {
   });
 
   it("summary shuttle controls use shuttle routes, not Fake jobs", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith("/scenes")) {
