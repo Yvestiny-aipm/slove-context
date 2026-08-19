@@ -692,3 +692,27 @@ make frontend-test
 - 每页可见横幅：「Demo / Fake Provider / 非真实模型」。
 - 前端测试（vitest）：关键视图可渲染；批准打审校队列 approve；批准不触发 submit。
 - **不得**调用真实模型、自动批准 / 自动提交 Canon、加入章级或全书级生成、或新增生产 seed-status HTTP。
+
+## 命令示例（节点 UI.2）
+
+主编穿梭：拷提示词到自己订阅的模型，再把结果贴回。不经本仓库 API。仅 Fake Provider 作业保持原样。
+
+```bash
+make format
+make lint
+make typecheck
+make test
+make frontend-test
+```
+
+`make test` 覆盖既有 2.1–9.3 / UI.1 进程内测试，以及 UI.2 穿梭（写稿提示词含目标 / 禁止 / 知识边界、贴回正文 `generation_model=external-subscribed`、evidence_quote 非子串 400、有效抽取后候选为 Extracted 且 Canon 事实数不变、穿梭路径不调 Gateway / Fake）。不连 Postgres，不调用外部模型，无网络。无生产 seed-status HTTP。
+
+## 节点 UI.2 边界
+
+- 四条路由：`GET .../shuttle/draft-prompt`、`POST .../shuttle/drafts`、`GET .../drafts/{revision_id}/shuttle/extract-prompt`、`POST .../drafts/{revision_id}/shuttle/extracts`。仅 `human_editor`。
+- 提示词由已批准 Scene Card + 规格要点 + 冻结 Snapshot 摘录确定性组装，中文，无 LLM。
+- 贴回正文：空白剥离后满 50 字才落不可变修订；`generation_model=external-subscribed`，`prompt_version=scene_draft.shuttle.v1`，状态 Generated。旧修订按 3.4 语义 Superseded，不覆盖旧正文。
+- 贴回抽取：服务端补齐 schema 字段后对照既有 `candidate-change.schema.json`；`evidence_quote` 必须是该修订正文子串，否则 400 且不落库。候选起始 Extracted。复用 4.1 持久化。不自动 Validate，不自动批准。
+- 场景页四个控件只打 shuttle 路径，不打 `drafts/jobs` / `extract-jobs`。
+- **不得**调用真实模型、写入 API Key、自动批准 / 自动提交 Canon、改 3.4 Fake 生成作业、改写 9.1 expected / 9.2 历史语义，或新增生产 seed-status HTTP。
+- 发布 / 穿梭路径都 **没有写 Canon**。

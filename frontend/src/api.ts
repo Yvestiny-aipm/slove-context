@@ -33,6 +33,45 @@ export function candidateApprovePath(
   return `/projects/${projectId}/candidate-changes/${candidateId}/approve`;
 }
 
+export function shuttleDraftPromptPath(
+  projectId: string,
+  sceneId: string,
+): string {
+  return `/projects/${projectId}/scenes/${sceneId}/shuttle/draft-prompt`;
+}
+
+export function shuttleDraftsPath(projectId: string, sceneId: string): string {
+  return `/projects/${projectId}/scenes/${sceneId}/shuttle/drafts`;
+}
+
+export function shuttleExtractPromptPath(
+  projectId: string,
+  sceneId: string,
+  revisionId: string,
+): string {
+  return `/projects/${projectId}/scenes/${sceneId}/drafts/${revisionId}/shuttle/extract-prompt`;
+}
+
+export function shuttleExtractsPath(
+  projectId: string,
+  sceneId: string,
+  revisionId: string,
+): string {
+  return `/projects/${projectId}/scenes/${sceneId}/drafts/${revisionId}/shuttle/extracts`;
+}
+
+export function fakeDraftJobsPath(projectId: string, sceneId: string): string {
+  return `/projects/${projectId}/scenes/${sceneId}/drafts/jobs`;
+}
+
+export function fakeExtractJobsPath(
+  projectId: string,
+  sceneId: string,
+  revisionId: string,
+): string {
+  return `/projects/${projectId}/scenes/${sceneId}/drafts/${revisionId}/extract-jobs`;
+}
+
 async function parse(response: Response): Promise<unknown> {
   const text = await response.text();
   const body = text ? JSON.parse(text) : {};

@@ -136,6 +136,13 @@ td {
   margin-top: 0.35rem;
 }
 
+.actions textarea {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0;
+  font: inherit;
+}
+
 .error {
   color: #7a1f1f;
 }

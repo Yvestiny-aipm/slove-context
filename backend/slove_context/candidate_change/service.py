@@ -320,7 +320,7 @@ class CandidateChangeService:
                     }
                 )
                 continue
-            payload = _assemble_candidate(
+            payload = assemble_candidate(
                 raw,
                 project_id=scene.project_id,
                 scene_id=scene.id,
@@ -348,51 +348,68 @@ class CandidateChangeService:
         payloads: list[dict[str, Any]],
     ) -> None:
         def persist() -> None:
-            batch = self._repo.next_extract_batch(
-                job.project_id, job.scene_id, job.draft_id
-            )
-            candidate_ids: list[str] = []
-            for payload in payloads:
-                candidate = CandidateChange(
-                    id=str(payload["id"]),
-                    project_id=job.project_id,
-                    scene_id=job.scene_id,
-                    draft_id=job.draft_id,
-                    job_id=job.id,
-                    extract_batch=batch,
-                    schema_version=str(payload["schema_version"]),
-                    subject=str(payload["subject"]),
-                    predicate=str(payload["predicate"]),
-                    object=str(payload["object"]),
-                    value=str(payload["value"]),
-                    effective_story_time=str(payload["effective_story_time"]),
-                    source_scene_id=str(payload["source_scene_id"]),
-                    evidence_quote=str(payload["evidence_quote"]),
-                    confidence=float(payload["confidence"]),
-                    status=CANDIDATE_EXTRACTED,
-                    created_at=str(payload["created_at"]),
-                    created_by=str(payload["created_by"]),
-                    payload=payload,
-                )
-                self._repo.add_candidate(candidate)
-                candidate_ids.append(candidate.id)
-                self._write_audit(
-                    actor=Actor(actor_type=SYSTEM, actor_id=None),
-                    action="candidate_change.create",
-                    resource_type="candidate_change",
-                    resource_id=candidate.id,
-                    before_json=None,
-                    after_json=candidate.to_audit_dict(),
-                )
-            job.extract_batch = batch
-            job.candidate_ids = candidate_ids
-            job.validation_result = {"ok": True, "errors": [], "attempt": job.state}
-            job.failure_reason = None
-            job.evidence = None
-            self._mark_draft_extracted(draft)
-            self._transition(job, JOB_SUCCEEDED, actor_type=SYSTEM)
+            self.persist_extracted_payloads(job, draft=draft, payloads=payloads)
 
         self._gateway.invoke_once("persist_generation_state", persist)
+
+    def persist_extracted_payloads(
+        self,
+        job: ExtractJob,
+        *,
+        draft: SceneDraft,
+        payloads: list[dict[str, Any]],
+    ) -> list[CandidateChange]:
+        """4.1 persist path: candidates start Extracted; draft may become Extracted.
+
+        Does not call the LLM Gateway / Fake Provider. Does not write Canon.
+        Does not approve. Does not run Validate.
+        """
+        batch = self._repo.next_extract_batch(
+            job.project_id, job.scene_id, job.draft_id
+        )
+        candidate_ids: list[str] = []
+        created: list[CandidateChange] = []
+        for payload in payloads:
+            candidate = CandidateChange(
+                id=str(payload["id"]),
+                project_id=job.project_id,
+                scene_id=job.scene_id,
+                draft_id=job.draft_id,
+                job_id=job.id,
+                extract_batch=batch,
+                schema_version=str(payload["schema_version"]),
+                subject=str(payload["subject"]),
+                predicate=str(payload["predicate"]),
+                object=str(payload["object"]),
+                value=str(payload["value"]),
+                effective_story_time=str(payload["effective_story_time"]),
+                source_scene_id=str(payload["source_scene_id"]),
+                evidence_quote=str(payload["evidence_quote"]),
+                confidence=float(payload["confidence"]),
+                status=CANDIDATE_EXTRACTED,
+                created_at=str(payload["created_at"]),
+                created_by=str(payload["created_by"]),
+                payload=payload,
+            )
+            self._repo.add_candidate(candidate)
+            created.append(candidate)
+            candidate_ids.append(candidate.id)
+            self._write_audit(
+                actor=Actor(actor_type=SYSTEM, actor_id=None),
+                action="candidate_change.create",
+                resource_type="candidate_change",
+                resource_id=candidate.id,
+                before_json=None,
+                after_json=candidate.to_audit_dict(),
+            )
+        job.extract_batch = batch
+        job.candidate_ids = candidate_ids
+        job.validation_result = {"ok": True, "errors": [], "attempt": job.state}
+        job.failure_reason = None
+        job.evidence = None
+        self._mark_draft_extracted(draft)
+        self._transition(job, JOB_SUCCEEDED, actor_type=SYSTEM)
+        return created
 
     def _mark_draft_extracted(self, draft: SceneDraft) -> None:
         if draft.status != DRAFT_GENERATED:
@@ -562,7 +579,7 @@ def _raw_candidate_items(parsed: Any) -> tuple[list[Any], str | None]:
     return [], "structured_parse_failed"
 
 
-def _assemble_candidate(
+def assemble_candidate(
     raw: dict[str, Any],
     *,
     project_id: str,
