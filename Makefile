@@ -14,7 +14,8 @@ install:
 # style validation + review queue + local job queue / Worker +
 # Agent registry / permissions + single-scene DAG + batch schedule +
 # node 9.1 narrative consistency evals + node 9.2 experiment runs +
-# node 9.3 release gates / book export + node UI.1 demo seeder / CORS)
+# node 9.3 release gates / book export + node UI.1 demo seeder / CORS +
+# node UI.2 human shuttle)
 # and contracts/ (0.4). No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts

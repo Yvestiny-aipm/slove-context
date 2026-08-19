@@ -66,6 +66,9 @@ runner (no HTTP). Node 9.2: Experiment Run + baseline compare
 on the pinned 9.1 cases (Fake Provider only). Node 9.3: release
 gates and formal book export (read-only checks; no new prose).
 Release does not write Canon or approve.
+Node UI.2 adds a human shuttle (copy prompt / paste result).
+Shuttle does not call Gateway / Fake / vendor HTTP and does not
+write Canon.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -159,6 +162,7 @@ from slove_context.scheduler.repository import (
     ScheduleRepository,
 )
 from slove_context.scheduler.routes import router as scheduler_router
+from slove_context.shuttle.routes import router as shuttle_router
 from slove_context.story.repository import InMemoryStoryRepository, StoryRepository
 from slove_context.story.routes import router as story_router
 from slove_context.style.repository import InMemoryStyleRepository, StyleRepository
@@ -332,6 +336,7 @@ def create_app(
     application.include_router(scene_router)
     application.include_router(scene_plan_router)
     application.include_router(scene_draft_router)
+    application.include_router(shuttle_router)
     application.include_router(candidate_change_router)
     application.include_router(summary_router)
     application.include_router(validation_router)

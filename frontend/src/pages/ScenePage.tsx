@@ -1,13 +1,46 @@
 import { useEffect, useState } from "react";
-import { apiGet, asList, asRecord, textOf } from "../api";
+import {
+  apiGet,
+  apiPost,
+  asList,
+  asRecord,
+  shuttleDraftPromptPath,
+  shuttleDraftsPath,
+  shuttleExtractPromptPath,
+  shuttleExtractsPath,
+  textOf,
+} from "../api";
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error("clipboard unavailable");
+}
+
+function snapshotFrom(
+  plan: Record<string, unknown>,
+  drafts: Record<string, unknown>[],
+): string {
+  const fromPlan = textOf(plan.snapshot_id);
+  if (fromPlan) return fromPlan;
+  const first = drafts[0];
+  if (!first) return "";
+  return textOf(asRecord(first.input_versions).snapshot_id);
+}
 
 export function ScenePage({ projectId }: { projectId: string }) {
   const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [scenes, setScenes] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState("");
   const [plan, setPlan] = useState<Record<string, unknown>>({});
   const [drafts, setDrafts] = useState<Record<string, unknown>[]>([]);
   const [candidates, setCandidates] = useState<Record<string, unknown>[]>([]);
+  const [draftPaste, setDraftPaste] = useState("");
+  const [extractPaste, setExtractPaste] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,7 +63,7 @@ export function ScenePage({ projectId }: { projectId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, selected]);
+  }, [projectId, selected, reloadToken]);
 
   useEffect(() => {
     if (!selected) return;
@@ -72,15 +105,104 @@ export function ScenePage({ projectId }: { projectId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, selected]);
+  }, [projectId, selected, reloadToken]);
 
   const scene = scenes.find((item) => textOf(item.id) === selected) ?? {};
   const planBody = asRecord(plan.plan);
+  const currentDraft = drafts[0];
+  const currentDraftId = textOf(currentDraft?.id);
+
+  async function copyDraftPrompt() {
+    if (!selected) return;
+    try {
+      const payload = asRecord(
+        await apiGet(shuttleDraftPromptPath(projectId, selected)),
+      );
+      await copyText(textOf(payload.prompt));
+      setFeedback("已复制写稿提示词");
+      setError("");
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function pasteDraft() {
+    if (!selected) return;
+    const snapshotId = snapshotFrom(plan, drafts);
+    if (!snapshotId) {
+      setError("缺少 snapshot_id，无法贴回正文");
+      return;
+    }
+    try {
+      await apiPost(shuttleDraftsPath(projectId, selected), {
+        body: draftPaste,
+        snapshot_id: snapshotId,
+        plan_id: textOf(planBody.id) || undefined,
+      });
+      setDraftPaste("");
+      setFeedback("已贴回正文（未批准，未写 Canon）");
+      setError("");
+      setReloadToken((value) => value + 1);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function copyExtractPrompt() {
+    if (!selected || !currentDraftId) {
+      setError("没有可抽取的草稿修订");
+      return;
+    }
+    try {
+      const payload = asRecord(
+        await apiGet(
+          shuttleExtractPromptPath(projectId, selected, currentDraftId),
+        ),
+      );
+      await copyText(textOf(payload.prompt));
+      setFeedback("已复制抽取提示词");
+      setError("");
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function pasteExtract() {
+    if (!selected || !currentDraftId) {
+      setError("没有可抽取的草稿修订");
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(extractPaste);
+    } catch {
+      setError("贴回抽取需要 JSON 数组");
+      return;
+    }
+    const candidatesBody = Array.isArray(parsed)
+      ? parsed
+      : asList(asRecord(parsed).candidates);
+    try {
+      await apiPost(shuttleExtractsPath(projectId, selected, currentDraftId), {
+        candidates: candidatesBody,
+      });
+      setExtractPaste("");
+      setFeedback("已贴回抽取（Extracted，未批准，未写 Canon）");
+      setError("");
+      setReloadToken((value) => value + 1);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
 
   return (
     <section>
       <h2>当前场景</h2>
+      <p className="muted">
+        写稿和抽取可拷到你自己的模型，不经 API
+      </p>
       {error ? <p className="error">{error}</p> : null}
+      {feedback ? <p className="muted">{feedback}</p> : null}
       <p>
         选择场景：
         <select
@@ -101,6 +223,33 @@ export function ScenePage({ projectId }: { projectId: string }) {
         <p>冲突：{textOf(scene.conflict)}</p>
         <p>禁止：{JSON.stringify(scene.forbidden ?? [])}</p>
         <p>状态：{textOf(scene.status)} / 可生成：{scene.generatable ? "是" : "否"}</p>
+      </div>
+      <h3>人工穿梭</h3>
+      <div className="card actions">
+        <button type="button" onClick={() => void copyDraftPrompt()}>
+          复制写稿提示词
+        </button>
+        <textarea
+          value={draftPaste}
+          onChange={(event) => setDraftPaste(event.target.value)}
+          placeholder="把外部模型返回的正文贴在这里"
+          rows={5}
+        />
+        <button type="button" onClick={() => void pasteDraft()}>
+          贴回正文
+        </button>
+        <button type="button" onClick={() => void copyExtractPrompt()}>
+          复制抽取提示词
+        </button>
+        <textarea
+          value={extractPaste}
+          onChange={(event) => setExtractPaste(event.target.value)}
+          placeholder='贴回抽取（JSON 数组）'
+          rows={5}
+        />
+        <button type="button" onClick={() => void pasteExtract()}>
+          贴回抽取（JSON 数组）
+        </button>
       </div>
       <h3>Scene Plan</h3>
       <pre>{planBody.id ? JSON.stringify(planBody, null, 2) : "尚无计划"}</pre>
