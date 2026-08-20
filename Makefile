@@ -16,7 +16,8 @@ install:
 # node 9.1 narrative consistency evals + node 9.2 experiment runs +
 # node 9.3 release gates / book export + node UI.1 demo seeder / CORS +
 # node UI.2 human shuttle + node UI.3 summary shuttle +
-# node UI.4 DeepSeek scene-draft (mocked HTTP))
+# node UI.4 DeepSeek scene-draft (mocked HTTP) +
+# node P.1 local book snapshot / restart-does-not-lose)
 # and contracts/ (0.4). No live Postgres and no real model calls.
 test:
 	$(PYTHON) -m pytest tests contracts
@@ -27,6 +28,7 @@ frontend-test:
 
 # Seed Fake Provider Demo in-process and start backend + Vite UI.
 # Open http://127.0.0.1:5173 — not a production service.
+# Node P.1: if data/book.json (or SLOVE_BOOK_PATH) exists, serve that book.
 demo:
 	$(PYTHON) -m slove_context.demo --host 127.0.0.1 --port 8000 --with-frontend
 

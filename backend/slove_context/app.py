@@ -83,7 +83,13 @@ writes. Scene Draft jobs still accept the 3.4 static fixture id or
 a frozen assembler pack. There is no chapter-level or book-level
 generate entrance and no chapter-level Context Pack. No production
 seed-status route. Built-in /openapi.json is kept.
+Node P.1: when repositories are not injected, ``create_app`` may
+load / flush a local book snapshot (``data/book.json`` or
+``SLOVE_BOOK_PATH``). Process restart keeps the last saved book.
+Persist does not approve, submit Canon, or store API keys.
 """
+
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -133,6 +139,11 @@ from slove_context.outline.repository import (
     OutlineRepository,
 )
 from slove_context.outline.routes import router as outline_router
+from slove_context.persist import (
+    BookBundle,
+    FileBookStore,
+    resolve_persist_path,
+)
 from slove_context.release.repository import (
     InMemoryReleaseRepository,
     ReleaseRepository,
@@ -241,11 +252,16 @@ def create_app(
     job_timeout_s: float = 30.0,
     job_base_backoff_s: float = 0.0,
     cors_origins: list[str] | None = None,
+    persist_path: str | Path | bool | None = None,
 ) -> FastAPI:
     """Build the app. Tests inject in-memory repositories and an audit sink.
 
     Node UI.1: optional development CORS for the Vite origin. Production
     does not open ``*``. There is no production seed-status route.
+    Node P.1: ``persist_path`` (or ``SLOVE_BOOK_PATH`` / ``data/book.json``)
+    loads a saved book when present and flushes book writes. Injected
+    repositories stay in-memory unless a path is passed. Pytest does not
+    auto-persist. Empty data dir starts empty.
     """
     application = FastAPI(title="slove-context", version=__version__)
     origins = list(cors_origins) if cors_origins is not None else cors_origins_for_env()
@@ -259,18 +275,84 @@ def create_app(
         )
     application.add_middleware(RequestIdMiddleware)
     writer = audit_writer or AuditWriter(InMemoryAuditSink())
-    application.state.repository = repository or InMemoryStoryRepository()
-    application.state.canon_repository = canon_repository or InMemoryCanonRepository()
-    application.state.scene_repository = scene_repository or InMemorySceneRepository()
-    application.state.scene_plan_repository = (
-        scene_plan_repository or InMemoryScenePlanRepository()
-    )
-    application.state.scene_draft_repository = (
-        scene_draft_repository or InMemorySceneDraftRepository()
-    )
-    application.state.candidate_change_repository = (
+    story_repo = repository or InMemoryStoryRepository()
+    canon_repo = canon_repository or InMemoryCanonRepository()
+    scene_repo = scene_repository or InMemorySceneRepository()
+    scene_plan_repo = scene_plan_repository or InMemoryScenePlanRepository()
+    scene_draft_repo = scene_draft_repository or InMemorySceneDraftRepository()
+    candidate_repo = (
         candidate_change_repository or InMemoryCandidateChangeRepository()
     )
+    context_pack_repo = context_pack_repository or InMemoryContextPackRepository()
+    any_repo_injected = any(
+        item is not None
+        for item in (
+            repository,
+            canon_repository,
+            scene_repository,
+            scene_plan_repository,
+            scene_draft_repository,
+            candidate_change_repository,
+            summary_repository,
+            validation_repository,
+            repair_repository,
+            context_pack_repository,
+            outline_repository,
+            style_repository,
+            style_validation_repository,
+            review_queue_repository,
+            job_repository,
+            agent_repository,
+            dag_repository,
+            schedule_repository,
+            experiment_repository,
+            release_repository,
+        )
+    )
+    resolved_persist = resolve_persist_path(
+        persist_path, any_repo_injected=any_repo_injected
+    )
+    persist_store: FileBookStore | None = None
+    if resolved_persist is not None and _all_memory_book_repos(
+        story_repo,
+        canon_repo,
+        scene_repo,
+        scene_plan_repo,
+        scene_draft_repo,
+        candidate_repo,
+        context_pack_repo,
+    ):
+        persist_store = FileBookStore(
+            resolved_persist,
+            BookBundle(
+                story=story_repo,
+                canon=canon_repo,
+                scene=scene_repo,
+                scene_plan=scene_plan_repo,
+                scene_draft=scene_draft_repo,
+                candidate_change=candidate_repo,
+                context_pack=context_pack_repo,
+            ),
+        )
+        persist_store.load()
+        wrapped = persist_store.wrap_bundle()
+        story_repo = wrapped.story
+        canon_repo = wrapped.canon
+        scene_repo = wrapped.scene
+        scene_plan_repo = wrapped.scene_plan
+        scene_draft_repo = wrapped.scene_draft
+        candidate_repo = wrapped.candidate_change
+        context_pack_repo = wrapped.context_pack
+    application.state.repository = story_repo
+    application.state.canon_repository = canon_repo
+    application.state.scene_repository = scene_repo
+    application.state.scene_plan_repository = scene_plan_repo
+    application.state.scene_draft_repository = scene_draft_repo
+    application.state.candidate_change_repository = candidate_repo
+    application.state.persist_path = (
+        persist_store.path if persist_store is not None else None
+    )
+    application.state.book_store = persist_store
     application.state.summary_repository = (
         summary_repository or InMemorySummaryRepository()
     )
@@ -280,9 +362,7 @@ def create_app(
     application.state.repair_repository = (
         repair_repository or InMemoryRepairRepository()
     )
-    application.state.context_pack_repository = (
-        context_pack_repository or InMemoryContextPackRepository()
-    )
+    application.state.context_pack_repository = context_pack_repo
     application.state.outline_repository = (
         outline_repository or InMemoryOutlineRepository()
     )
@@ -371,6 +451,28 @@ def create_app(
         return {"version": __version__}
 
     return application
+
+
+def _all_memory_book_repos(
+    story_repo: StoryRepository,
+    canon_repo: CanonRepository,
+    scene_repo: SceneRepository,
+    scene_plan_repo: ScenePlanRepository,
+    scene_draft_repo: SceneDraftRepository,
+    candidate_repo: CandidateChangeRepository,
+    context_pack_repo: ContextPackRepository,
+) -> bool:
+    return all(
+        (
+            isinstance(story_repo, InMemoryStoryRepository),
+            isinstance(canon_repo, InMemoryCanonRepository),
+            isinstance(scene_repo, InMemorySceneRepository),
+            isinstance(scene_plan_repo, InMemoryScenePlanRepository),
+            isinstance(scene_draft_repo, InMemorySceneDraftRepository),
+            isinstance(candidate_repo, InMemoryCandidateChangeRepository),
+            isinstance(context_pack_repo, InMemoryContextPackRepository),
+        )
+    )
 
 
 app = create_app()

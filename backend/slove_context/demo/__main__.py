@@ -1,9 +1,11 @@
 """CLI: ``python -m slove_context.demo``.
 
-Default: seed an in-process Fake Provider app and serve it.
+Default: create the in-process app (node P.1 loads a saved book when
+present), seed only if the book is empty, and serve it.
 ``--seed-only`` prints the seed JSON and exits.
 ``--http URL`` seeds a running backend (still CLI-only; no seed-status route).
 ``--with-frontend`` also starts the Vite Demo UI.
+Does not overwrite an already-saved imported book.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from typing import Any
 
 from slove_context.app import create_app
 from slove_context.demo.seed import DemoSeedError, seed_demo, seed_via_http
+from slove_context.persist import persist_file_has_book
 
 
 def _repo_root() -> Path:
@@ -68,11 +71,20 @@ def main(argv: list[str] | None = None) -> int:
 
     os.environ.setdefault("SLOVE_ENV", "development")
     application = create_app()
+    persist_path = getattr(application.state, "persist_path", None)
     try:
+        # seed_demo is a no-op when a project already exists (loaded book).
         result = seed_demo(application)
     except DemoSeedError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    result = {
+        **result,
+        "persist_path": str(persist_path) if persist_path is not None else None,
+        "persist_loaded": bool(
+            persist_path is not None and persist_file_has_book(persist_path)
+        ),
+    }
     _print_result(result)
     if args.seed_only:
         return 0
