@@ -1,7 +1,7 @@
 # AGENTS.md
 
 本文件给在本仓库工作的实现 bot / 验收 bot 的硬规则。  
-一次只实现一个已冻结节点。当前节点是 9.3：发布门与全书导出（仅确定性检查 / 内存夹具）。不要启动节点 10.x。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。不要改写 9.1 expected 答案。不要改写 9.2 历史实验对比语义。风格发现默认不阻断 Canon 提交。
+一次只实现一个已冻结节点。当前节点是 P.1：Demo / 服务进程重启保留上一本已导入的书（本地文件快照）。不要启动其他节点。不要启动节点 10.x。不要实现 Agent 自动裁决。不要批准或提交 Canon。不要调用任何真实模型 API。不要加入章级或全书级生成入口。不要加入向量检索。不要绕过 PermissionGuard / 8.1 Worker / 8.2 Agent 权限。不要改 5.x 硬规则语义。不要改 3.4 生成作业逻辑。不要改写 9.1 expected 答案。不要改写 9.2 历史实验对比语义。风格发现默认不阻断 Canon 提交。
 
 开始任何任务前：先读 `docs/mvp-scope.md`、`docs/domain-glossary.md`、`docs/state-machines.md`、`docs/architecture.md` 与 `contracts/`。 
 不要把未实现行为写成已完成。不要发明已落地的鉴权、10.x、真实模型调用或生成器。节点 9.3 只做发布检查与导出已批准草稿。Worker 是分发器，不是裁决者。批准风格资产 / Style Report / 审校队列裁决不是 Canon 批准，不写 Canon。审校队列 approve 候选变更只复用 4.2 裁决，不 submit。风格校验不是 5.x Validation Run。Human Approver 是唯一可批准 Canon 的角色。canon_commit 仅在人类批准后调用既有 4.2 submit。评测 runner、实验运行与发布检查不得写 Canon、不得批准。
@@ -766,3 +766,27 @@ make frontend-test
 - 测试必须 mock HTTP。不得把真实密钥写入日志、审计、夹具、`.env.example`、提交说明。
 - **不得**启动 UI.5 / 10.x、章级生成、第二供应商、自动批准 / 自动提交 Canon，或改写 9.1 expected / 9.2 历史语义。
 - 发布 / 穿梭 / DeepSeek 写稿路径都 **没有写 Canon**。
+
+## 命令示例（节点 P.1）
+
+Demo / 服务进程重启必须保留上一本已导入的书。空 data 目录首次可为空；写入后再次启动必须加载同一本。仅确定性文件快照 / 内存夹具。不连 live Postgres。
+
+```bash
+make format
+make lint
+make typecheck
+make test
+```
+
+`make test` 覆盖既有 2.1–9.3 / UI.1–UI.4 进程内测试，以及 P.1 书快照（写入后新 app 实例仍是同一项目 / 场次 / 最新草稿正文 / 四条已批准 Canon 事实仍是事实 / 悬挂候选仍是 Extracted 且不是事实；空目录先空后可再加载；persist 文件不含 API Key）。不连 Postgres。无生产 seed-status HTTP。测试只在进程内模拟重启，不得去打正在跑的 Demo。
+
+## 节点 P.1 边界
+
+- 默认快照：`data/book.json`（`SLOVE_BOOK_PATH` 可改路径名）。`data/` 已 gitignore，正文不进 Git。
+- `create_app()` 未注入仓库时：文件存在则加载；目录/文件为空则空书。不要每次启动都盲目 `seed_demo` 覆盖已保存的书。
+- 改书的写入（项目 / 场次 / 草稿 / Canon 事实 / 候选）必须 flush。
+- `python -m slove_context.demo` / `make demo`：已有快照则服务该书；空则允许播 Fake 夹具或空书。已保存的进口书不得被夹具覆盖。
+- 密钥只来自环境变量（`DEEPSEEK_API_KEY` 等）。快照不得存 API Key。
+- 候选不得自动升格为 Canon。批准 / 提交仍走既有人类路径。
+- **不得**启动 10.x、向量检索、第二本书切换器、章级生成、自动批准 / 自动提交 Canon，或改写 9.1 expected / 9.2 历史语义 / 5.x 硬规则 / 3.4 生成作业。
+- 发布 / 穿梭 / DeepSeek / 快照路径都 **没有写 Canon**。
