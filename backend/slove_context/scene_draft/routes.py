@@ -1,6 +1,8 @@
-"""HTTP routes for Scene Draft generation jobs (node 3.4).
+"""HTTP routes for Scene Draft generation jobs (node 3.4 + UI.4).
 
-POST triggers one per-scene job. GET reads the job or draft revisions.
+POST triggers one per-scene job. Omit provider to keep Fake (3.4 / Demo).
+``provider=deepseek`` uses DeepSeek (UI.4) and refuses without
+DEEPSEEK_API_KEY. GET reads the job or draft revisions.
 Cancel is terminal and does not delete. No auto-approve. No fact
 extraction. No chapter-level generate. No Canon writes.
 """
@@ -13,6 +15,11 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from slove_context.canon.repository import CanonRepository
+from slove_context.llm.deepseek import (
+    DEEPSEEK_MODEL,
+    DEEPSEEK_PROVIDER_NAME,
+    deepseek_api_key_configured,
+)
 from slove_context.llm.fake import FakeProvider
 from slove_context.llm.gateway import LlmGateway
 from slove_context.scene.repository import SceneRepository
@@ -40,6 +47,7 @@ class TriggerJobBody(BaseModel):
     actor_type: str | None = None
     actor_id: str | None = None
     created_by: str | None = None
+    provider: str | None = None
 
 
 class CancelBody(BaseModel):
@@ -47,17 +55,31 @@ class CancelBody(BaseModel):
     actor_id: str | None = None
 
 
-def _service(request: Request) -> SceneDraftService:
+def _normalized_provider(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip().lower()
+    return cleaned or None
+
+
+def _service(request: Request, *, provider: str | None = None) -> SceneDraftService:
     story: StoryRepository = request.app.state.repository
     scenes: SceneRepository = request.app.state.scene_repository
     plans: ScenePlanRepository = request.app.state.scene_plan_repository
     drafts: SceneDraftRepository = request.app.state.scene_draft_repository
     canon: CanonRepository = request.app.state.canon_repository
-    gateway: LlmGateway = request.app.state.llm_gateway
+    use_deepseek = provider == DEEPSEEK_PROVIDER_NAME
+    if use_deepseek:
+        gateway = getattr(request.app.state, "scene_draft_llm_gateway", None)
+        generation_model = DEEPSEEK_MODEL
+    else:
+        gateway = request.app.state.llm_gateway
+        generation_model = "fake-model"
     if gateway is None:
         gateway = LlmGateway(
             FakeProvider(), audit_writer=request.app.state.audit_writer
         )
+        generation_model = "fake-model"
     scene_service = SceneService(
         story_repository=story,
         scene_repository=scenes,
@@ -78,6 +100,7 @@ def _service(request: Request) -> SceneDraftService:
         context_pack_repository=getattr(
             request.app.state, "context_pack_repository", None
         ),
+        generation_model=generation_model,
     )
 
 
@@ -104,8 +127,35 @@ def _raise(exc: SceneDraftServiceError) -> NoReturn:
 def trigger_scene_draft_job(
     request: Request, project_id: str, scene_id: str, body: TriggerJobBody
 ) -> dict[str, Any]:
+    provider = _normalized_provider(body.provider)
+    if provider not in {None, "fake", DEEPSEEK_PROVIDER_NAME}:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "unsupported_draft_provider",
+                "message": (
+                    "Scene Draft jobs accept provider=deepseek (UI.4) or omit "
+                    "it to keep the Fake path. No second vendor."
+                ),
+                "provider": provider,
+                "writes_canon": False,
+            },
+        )
+    if provider == DEEPSEEK_PROVIDER_NAME and not deepseek_api_key_configured():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "deepseek_api_key_missing",
+                "message": (
+                    "DEEPSEEK_API_KEY is missing or empty. DeepSeek Scene Draft "
+                    "generation refused. No prose persisted. Not Canon."
+                ),
+                "writes_canon": False,
+                "auto_approved": False,
+            },
+        )
     try:
-        job = _service(request).trigger_job(
+        job = _service(request, provider=provider).trigger_job(
             project_id=project_id,
             scene_id=scene_id,
             snapshot_id=body.snapshot_id,

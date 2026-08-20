@@ -64,6 +64,8 @@ _SECRET_KEYS = frozenset(
         "credentials",
         "private_key",
         "model_api_key",
+        "deepseek_api_key",
+        "bearer",
     }
 )
 

@@ -1,4 +1,5 @@
-export const DEMO_BANNER = "Demo / Fake Provider / 非真实模型";
+export const DEMO_BANNER =
+  "Demo / Fake Provider / DeepSeek 可配置 / 非自动批准";
 
 export function Banner() {
   return (

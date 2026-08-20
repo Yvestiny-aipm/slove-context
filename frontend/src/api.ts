@@ -78,8 +78,15 @@ export function shuttleSceneSummariesPath(
   return `/projects/${projectId}/scenes/${sceneId}/shuttle/summaries`;
 }
 
-export function fakeDraftJobsPath(projectId: string, sceneId: string): string {
+export const STATIC_CONTEXT_PACK_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+export const DEEPSEEK_PROVIDER = "deepseek";
+
+export function draftJobsPath(projectId: string, sceneId: string): string {
   return `/projects/${projectId}/scenes/${sceneId}/drafts/jobs`;
+}
+
+export function fakeDraftJobsPath(projectId: string, sceneId: string): string {
+  return draftJobsPath(projectId, sceneId);
 }
 
 export function fakeExtractJobsPath(

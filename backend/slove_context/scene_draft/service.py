@@ -10,8 +10,10 @@ Trigger requires:
 Output is immutable Scene Draft prose (status Generated at most).
 Retry or rewrite creates a new revision. Old rows are not overwritten.
 
-Uses Fake Provider via LlmGateway.generate_text only. Does not write
+Uses LlmGateway.generate_text. Default jobs stay Fake (3.4). Node UI.4
+may pass a DeepSeek-backed gateway for one-scene prose. Does not write
 Canon. Does not auto-approve or publish. Does not extract facts (4.1).
+Provider generate_* do not persist drafts.
 
 Idempotency rules (also in models.py and README):
 1. Duplicate submit: the same idempotency_key on the same scene returns
@@ -107,6 +109,7 @@ class SceneDraftService:
         task_type: str = DEFAULT_TASK_TYPE,
         auto_run: bool = True,
         context_pack_repository: ContextPackRepository | None = None,
+        generation_model: str = "fake-model",
     ) -> None:
         self._story = story_repository
         self._canon = canon_repository
@@ -118,6 +121,7 @@ class SceneDraftService:
         self._task_type = task_type
         self._auto_run = auto_run
         self._context_packs = context_pack_repository
+        self._generation_model = generation_model or "fake-model"
 
     def trigger_job(
         self,
@@ -256,7 +260,9 @@ class SceneDraftService:
         if body is None:
             self._fail(job, reason=reason or "generate_failed")
             return
-        self._succeed(job, body=body, model=_model_from_response(response))
+        self._succeed(
+            job, body=body, model=_model_from_response(response, self._generation_model)
+        )
 
     def _generate(
         self,
@@ -266,7 +272,7 @@ class SceneDraftService:
         user_prompt: str,
     ) -> GenerateResponse | None:
         request = GenerateRequest(
-            model="fake-model",
+            model=self._generation_model,
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             temperature=0.4,
@@ -550,9 +556,11 @@ def _prose_from_response(
     return text, None
 
 
-def _model_from_response(response: GenerateResponse | None) -> str:
+def _model_from_response(
+    response: GenerateResponse | None, fallback: str = "fake-model"
+) -> str:
     if response is None or not response.model:
-        return "fake-model"
+        return fallback
     return response.model
 
 

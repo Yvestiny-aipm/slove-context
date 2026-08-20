@@ -4,6 +4,7 @@
 节点 UI.1 只增加本地工作流前端 Demo 的目录边界（`frontend/` + 开发态 CORS + CLI 播种）；不是真实模型集成，不是 10.x。
 节点 UI.2 只增加主编穿梭（拷提示词出去 / 贴结果回来）：`backend/slove_context/shuttle/` + 场景页四个控件。不调用真实模型 HTTP，不写 Canon。Fake 生成作业保持原样。
 节点 UI.3 只增加摘要穿梭（拷场景 / 章摘要提示词出去 / 贴短摘要回来）：同一 `shuttle/` 再加四条路由 + 场景页两个控件。不调用真实模型 HTTP，不写 Canon。4.3 Fake `summaries/jobs` 保持原样。
+节点 UI.4 只增加 DeepSeek Provider，供一场已有 Scene Card 经既有 `drafts/jobs`（`provider=deepseek`）生成 Scene Draft。UI.2 / UI.3 穿梭保持。不自动批准，不写 Canon。不是 10.x。
 不写实现细节，不把未实现行为写成已完成。术语与范围以节点 0.1–0.4 为准，本文不改写它们。
 
 ## 1. 形态
@@ -29,15 +30,15 @@
 | `evals/` | 节点 9.1 叙事一致性评测：`cases/` 清单、`fixtures/` 合同载荷、`expected/` 期望候选与违规 | 9.2 只读引用该钉死案例集，不得改写 expected；不是 9.3 发布门；runner / 实验均不写 Canon |
 | `backend/alembic/` | `audit_events`、Story Project / Spec 与 Canon 表的可审阅迁移；2.3 增量加 snapshot 列；3.1 建 `arcs` / `chapters` / `scenes` / `scene_dependencies`；3.3 建 `scene_plan_jobs` / `scene_plans`；3.4 建 `scene_draft_jobs` / `scene_drafts`；4.1 建 `extract_jobs` / `candidate_changes`；4.2 在 `candidate_changes` 上增量加批准 / 提交列；4.3 建 `summary_jobs` / `scene_summaries` / `chapter_summaries`；5.1 建 `validation_runs` / `validation_reports`；5.2 建 `repair_tasks`；6.1 建 `context_packs`；6.2 建 `outline_revisions`；7.1 建 `style_guides` / `style_samples` 并在 `scene_drafts` 上增量加风格引用列；7.2 建 `style_validations`；7.3 建 `review_queue_items` / `review_decisions`；8.1 建 `jobs` / `job_payloads` / `job_locks`；8.2 建 `agents` / `agent_runs`；8.3 建 `scene_dags` / `dag_nodes`；8.4 建 `project_schedule_configs` / `schedule_runs` / `schedule_decisions` / `schedule_alerts` / `schedule_budget_counters`；9.2 建 `experiments` / `experiment_runs` / `experiment_comparisons`；9.3 建 `release_checks` / `release_manifests` / `release_exports` / `release_due_items` / `release_waivers` / `release_safety_checks` | 单元测试不跑迁移；不重建 Canon / 项目 / Scene Card / Scene Plan / Scene Draft / extract / 摘要 / Validation Run / Repair Task / Context Pack / Outline / Style Guide / Style Validation / 审校队列 / jobs / Agent / DAG / 调度 / 实验表；不建章级生成 / 10.x |
 | `prompts/` | 带版本号的 Scene Plan / Scene Draft / Candidate Extract / Scene Summary / Chapter Summary / Style Validation Prompt 模板 | 不是 Context Pack 组装 Prompt，也不是 5.x Validate Prompt |
-| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限、单场景 DAG 编排、批量调度、叙事一致性评测、实验运行与基线对比、发布门与全书导出、UI.1 Demo 播种 / CORS、UI.2 穿梭、以及 UI.3 摘要穿梭的进程内测试；可收集 `contracts/` 测试 | 不需要 live Postgres；无真实模型调用；Gateway / 作业 / 评测 / 实验 / 发布 / Demo / 穿梭测试只用 Fake / 夹具 / 确定性组装 |
-| `frontend/` | 节点 UI.1 本地工作流 Demo：Vite + React + TypeScript；只读已落地 2.1–9.3 API，审校按钮打现有 7.3 / 4.2。节点 UI.2 在场景页增加穿梭四控件（复制写稿提示词 / 贴回正文 / 复制抽取提示词 / 贴回抽取），只打 shuttle 路径。节点 UI.3 在同一场景页增加摘要穿梭两控件（复制本场摘要提示词 / 贴回本场摘要） | 不是 10.x；无登录鉴权；无真实模型；无设计系统；批准不自动提交 Canon；穿梭贴回不是批准 |
+| `tests/` | `/healthz`、request_id、审计写入、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限、单场景 DAG 编排、批量调度、叙事一致性评测、实验运行与基线对比、发布门与全书导出、UI.1 Demo 播种 / CORS、UI.2 穿梭、UI.3 摘要穿梭、以及 UI.4 DeepSeek 写稿（mock HTTP）的进程内测试；可收集 `contracts/` 测试 | 不需要 live Postgres；无真实模型调用；Gateway / 作业 / 评测 / 实验 / 发布 / Demo / 穿梭测试只用 Fake / 夹具 / 确定性组装；UI.4 测试必须 mock，不得连 api.deepseek.com |
+| `frontend/` | 节点 UI.1 本地工作流 Demo：Vite + React + TypeScript；只读已落地 2.1–9.3 API，审校按钮打现有 7.3 / 4.2。节点 UI.2 在场景页增加穿梭四控件（复制写稿提示词 / 贴回正文 / 复制抽取提示词 / 贴回抽取），只打 shuttle 路径。节点 UI.3 在同一场景页增加摘要穿梭两控件（复制本场摘要提示词 / 贴回本场摘要）。节点 UI.4 在同一场景页增加 DeepSeek 写稿按钮，打既有 `drafts/jobs` | 不是 10.x；无登录鉴权；无设计系统；批准不自动提交 Canon；穿梭贴回不是批准；DeepSeek 写稿不是批准 |
 | `scripts/` | 脚本目录占位 | 无业务命令 |
 | `data/` | 本地数据目录占位 | 不存放密钥、正文敏感内容或模型输出（见 `.gitignore`） |
 | `docker-compose.yml` | 可启动的 Postgres（healthcheck + 持久卷） | 无 backend 容器（可选） |
 | `.env.example` | 变量名与安全注释 | 不读取、不连接、不含真实密钥 |
 | `Makefile` | `install` / `format` / `lint` / `typecheck` / `test` / `frontend-test` / `demo` | `demo` 只启动本地 Fake Provider 工作流 Demo，不是生产服务 |
 
-## 3. 本仓库包含（节点 1.1 + 1.2 + 1.3 + 2.1 + 2.2 + 2.3 + 3.1 + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 5.1 + 5.2 + 6.1 + 6.2 + 7.1 + 7.2 + 7.3 + 8.1 + 8.2 + 8.3 + 8.4 + 9.1 + 9.2 + 9.3 + UI.1 Demo + UI.2 穿梭 + UI.3 摘要穿梭）
+## 3. 本仓库包含（节点 1.1 + 1.2 + 1.3 + 2.1 + 2.2 + 2.3 + 3.1 + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 5.1 + 5.2 + 6.1 + 6.2 + 7.1 + 7.2 + 7.3 + 8.1 + 8.2 + 8.3 + 8.4 + 9.1 + 9.2 + 9.3 + UI.1 Demo + UI.2 穿梭 + UI.3 摘要穿梭 + UI.4 DeepSeek 写稿）
 
 - 仓库根约定：`AGENTS.md`、`.gitignore`、`.env.example`、`Makefile`。
 - 目录占位：`backend/`、`tests/`、`scripts/`、`data/`、`prompts/`。
@@ -70,10 +71,11 @@
 - 叙事一致性评测（节点 9.1）：`evals/cases/`、`evals/fixtures/`、`evals/expected/` 与确定性 runner。九类一致性错误各至少一例。复用 5.x 硬规则；仅当类别无法用既有规则表达时才加 `eval.*` 检查。不写 Canon，不批准，不调真实模型。无评测 HTTP 路由。
 - 实验运行与基线对比（节点 9.2）：钉死 9.1 案例集后可替换 model / prompt_version / retrieval_strategy / temperature / max_tokens；记录完整配置、输入版本、输出引用、六项指标、token 成本与延迟；可与基线 Run 对比并导出 CSV / JSON。历史 Run 只读；未冻结 Prompt 不得覆盖旧 Run。仅 Fake Provider。不写 Canon，不批准。不是 9.3 发布门。
 - 发布门与全书导出（节点 9.3）：对已有已批准草稿 / Validation / 候选提交或拒绝 / 冻结 Snapshot / 章摘要 / 风格校验 / 审计做八项只读预发布检查。全部通过才写不可变 Release Manifest 并允许正式导出（Markdown / JSON / 审校包）。任一失败返回机器可读失败列表，禁止正式导出；失败检查记录可保留，但不是正式发布。伏笔到期项为最小 due-item + 人类豁免。安全检查为确定性占位或人类豁免，不调真实安全供应商。发布路径不批准、不提交 Canon，不自动发表草稿，不生成新散文。
-- 进程内测试：`/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限、单场景 DAG、批量调度、叙事一致性评测、实验运行与基线对比、发布门与全书导出、UI.1 Demo 播种 / CORS、UI.2 穿梭、UI.3 摘要穿梭（以及已有的 contracts 校验）。不连 Postgres，不调用真实模型。
+- 进程内测试：`/healthz`、request_id、审计写入与脱敏、Story Project / Spec、Canon、Snapshot、Scene Card、LLM Gateway、Scene Plan / Scene Draft 作业、Candidate Change 抽取与人类批准 / 提交、Scene / Chapter 摘要、Validation Run、Repair Task、Context Pack 组装、Outline Revision、Style Guide / Style Sample、Style Validation、审校队列、本地作业队列 / Worker、Agent 注册表 / 权限、单场景 DAG、批量调度、叙事一致性评测、实验运行与基线对比、发布门与全书导出、UI.1 Demo 播种 / CORS、UI.2 穿梭、UI.3 摘要穿梭、UI.4 DeepSeek 写稿 mock（以及已有的 contracts 校验）。不连 Postgres。UI.4 测试不连 api.deepseek.com。
 - 节点 UI.1 本地工作流前端 Demo：`frontend/`（Vite + React + TypeScript）只读已落地 API；开发态 FastAPI CORS 仅放行 Vite origin，生产配置不开放 `*`；`python -m slove_context.demo` 为 CLI 播种（不是生产 seed-status HTTP）；`make demo` 同时启动后端与前端。审校批准走既有 7.3 / 4.2，不自动 submit Canon。不是真实模型集成，不是 10.x。
 - 节点 UI.2 主编穿梭：确定性组装中文写稿 / 抽取提示词并供拷贝；贴回散文或候选 JSON 分别落不可变 Scene Draft 修订（`generation_model=external-subscribed`）或 Extracted 候选。不调用 LLM Gateway / Fake / 真实模型 HTTP。贴回不是批准，不写 Canon。旧的「生成作业」点击仍走 Fake。
 - 节点 UI.3 摘要穿梭：确定性组装中文场景 / 章摘要提示词（复用 `prompts/scene_summary.v1.md` / `prompts/chapter_summary.v1.md` + 已有草稿或场景摘要正文）；贴回短摘要落不可变 Scene / Chapter Summary 修订（`generation_model=external-subscribed`，`prompt_version=*.shuttle.v1`）。章摘要必须引用该章每场当前场景摘要修订；缺一场则 409，不得编造。不调用 LLM Gateway / Fake / 真实模型 HTTP。贴回不是批准，不写 Canon。4.3 Fake `summaries/jobs` 保持原样。无新前端页面。
+- 节点 UI.4 DeepSeek 写稿：`DeepSeekProvider` 走官方 cheap chat `deepseek-v4-flash`；密钥仅 `DEEPSEEK_API_KEY`；一场 Scene Draft 经既有 `POST .../drafts/jobs`（`provider=deepseek`）落不可变 Generated 修订。缺密钥拒绝。不自动批准，不写 Canon。plan / extract / summary 等作业保持 Fake。UI.2 / UI.3 穿梭保持。
 
 ## 4. 本节点明确不是
 
@@ -118,6 +120,7 @@
 - 把节点 UI.1 工作流前端 Demo 写成真实模型集成、10.x、登录鉴权、或生产 seed-status HTTP。
 - 把节点 UI.2 穿梭写成真实模型供应商客户端、API Key、自动批准 / 提交 Canon，或改 3.4 Fake 生成作业。
 - 把节点 UI.3 摘要穿梭写成真实模型供应商客户端、API Key、自动批准 / 提交 Canon，或改 4.3 Fake 摘要作业 / 9.3 发布门语义。
+- 把节点 UI.4 DeepSeek 写稿写成自动批准 / 写 Canon、章级生成、第二供应商、或改 UI.2 / UI.3 穿梭语义。
 
 ## 5. 与已冻结文档的关系
 

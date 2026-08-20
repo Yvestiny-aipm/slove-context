@@ -30,7 +30,9 @@ from uuid import uuid4
 
 from slove_context.audit import AuditWriter
 from slove_context.llm.errors import (
+    MissingApiKeyError,
     NonIdempotentRetryError,
+    ProviderHttpError,
     ProviderTimeoutError,
     ProviderTransientError,
     RetriesExhaustedError,
@@ -308,7 +310,16 @@ def _is_write_operation(operation: str) -> bool:
 
 
 def _is_retryable_exception(exc: BaseException) -> bool:
-    if isinstance(exc, (StructuredParseError, NonIdempotentRetryError, ValueError)):
+    if isinstance(
+        exc,
+        (
+            StructuredParseError,
+            NonIdempotentRetryError,
+            MissingApiKeyError,
+            ProviderHttpError,
+            ValueError,
+        ),
+    ):
         return False
     return isinstance(exc, (ProviderTimeoutError, ProviderTransientError, TimeoutError))
 

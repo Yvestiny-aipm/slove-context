@@ -4,12 +4,15 @@ import {
   apiPost,
   asList,
   asRecord,
+  DEEPSEEK_PROVIDER,
+  draftJobsPath,
   shuttleDraftPromptPath,
   shuttleDraftsPath,
   shuttleExtractPromptPath,
   shuttleExtractsPath,
   shuttleSceneSummariesPath,
   shuttleSceneSummaryPromptPath,
+  STATIC_CONTEXT_PACK_ID,
   textOf,
 } from "../api";
 
@@ -231,6 +234,38 @@ export function ScenePage({ projectId }: { projectId: string }) {
     }
   }
 
+  async function generateDeepSeekDraft() {
+    if (!selected) return;
+    const snapshotId = snapshotFrom(plan, drafts);
+    const planId = textOf(planBody.id);
+    if (!snapshotId || !planId) {
+      setError("缺少已批准 Scene Plan / snapshot，无法用 DeepSeek 生成本场");
+      return;
+    }
+    try {
+      const payload = asRecord(
+        await apiPost(draftJobsPath(projectId, selected), {
+          snapshot_id: snapshotId,
+          plan_id: planId,
+          context_pack_id: STATIC_CONTEXT_PACK_ID,
+          provider: DEEPSEEK_PROVIDER,
+        }),
+      );
+      if (textOf(payload.state) === "failed") {
+        setError(
+          `DeepSeek 写稿失败：${textOf(payload.failure_reason) || "generate_failed"}`,
+        );
+        setFeedback("");
+        return;
+      }
+      setFeedback("已用 DeepSeek 生成本场正文（未批准，未写 Canon）");
+      setError("");
+      setReloadToken((value) => value + 1);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
   async function pasteSummary() {
     if (!selected || !currentDraftId) {
       setError("没有可摘要的草稿修订");
@@ -254,7 +289,7 @@ export function ScenePage({ projectId }: { projectId: string }) {
     <section>
       <h2>当前场景</h2>
       <p className="muted">
-        写稿、抽取和摘要可拷到你自己的模型，不经 API
+        可用 DeepSeek 直接生成本场正文，或拷提示词到你自己的模型再贴回。穿梭不经本仓库模型 API。
       </p>
       {error ? <p className="error">{error}</p> : null}
       {feedback ? <p className="muted">{feedback}</p> : null}
@@ -278,6 +313,13 @@ export function ScenePage({ projectId }: { projectId: string }) {
         <p>冲突：{textOf(scene.conflict)}</p>
         <p>禁止：{JSON.stringify(scene.forbidden ?? [])}</p>
         <p>状态：{textOf(scene.status)} / 可生成：{scene.generatable ? "是" : "否"}</p>
+      </div>
+      <h3>DeepSeek 写稿</h3>
+      <div className="card actions">
+        <button type="button" onClick={() => void generateDeepSeekDraft()}>
+          用 DeepSeek 生成本场正文
+        </button>
+        <p className="muted">走既有草稿作业。需要 DEEPSEEK_API_KEY。不批准，不写 Canon。</p>
       </div>
       <h3>人工穿梭</h3>
       <div className="card actions">
@@ -320,7 +362,7 @@ export function ScenePage({ projectId }: { projectId: string }) {
       </div>
       <h3>Scene Plan</h3>
       <pre>{planBody.id ? JSON.stringify(planBody, null, 2) : "尚无计划"}</pre>
-      <h3>Scene Draft（夹具散文）</h3>
+      <h3>Scene Draft</h3>
       {drafts.map((draft) => (
         <div key={textOf(draft.id)} className="card">
           <p>修订 {textOf(draft.revision)} / {textOf(draft.status)}</p>

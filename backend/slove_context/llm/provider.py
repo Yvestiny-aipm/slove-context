@@ -1,7 +1,7 @@
-"""Swappable Provider interface (node 3.2).
+"""Swappable Provider interface (node 3.2 + UI.4 DeepSeek).
 
-v1 ships FakeProvider only. No OpenAI / Anthropic / HTTP client.
-generate_text and generate_structured are idempotent provider-level reads:
+v1 ships FakeProvider. Node UI.4 adds DeepSeekProvider for Scene Draft
+generate_text. generate_* remain idempotent provider-level reads:
 they must not persist Canon, Scene Draft, audit+state, or any other write.
 """
 
@@ -13,7 +13,7 @@ from slove_context.llm.types import GenerateRequest, GenerateResponse
 
 
 class Provider(ABC):
-    """One writing-model vendor at a time. Only Fake is implemented in v1."""
+    """One writing-model vendor at a time. Fake plus UI.4 DeepSeek for drafts."""
 
     name: str
 

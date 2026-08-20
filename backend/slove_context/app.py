@@ -70,6 +70,9 @@ Node UI.2 adds a human shuttle (copy prompt / paste result).
 Node UI.3 adds scene / chapter summary shuttle doors on the same
 path. Shuttle does not call Gateway / Fake / vendor HTTP and does
 not write Canon.
+Node UI.4 adds DeepSeekProvider for one-scene Scene Draft jobs when
+``provider=deepseek``. Other jobs stay Fake. Missing DEEPSEEK_API_KEY
+refuses that trigger. No auto-approve. No Canon write.
 
 No auth or live model clients. Spec / Scene Card approval is not
 Canon approval. Scene Plan, Scene Draft, Candidate Change,
@@ -120,6 +123,7 @@ from slove_context.jobs.deps import services_from_state
 from slove_context.jobs.repository import InMemoryJobRepository, JobRepository
 from slove_context.jobs.routes import router as jobs_router
 from slove_context.jobs.worker import Worker
+from slove_context.llm.deepseek import DeepSeekProvider
 from slove_context.llm.fake import FakeProvider
 from slove_context.llm.gateway import LlmGateway
 from slove_context.logging import configure_json_logging
@@ -219,6 +223,7 @@ def create_app(
     validation_rule_engine: RuleEngine | None = None,
     audit_writer: AuditWriter | None = None,
     llm_gateway: LlmGateway | None = None,
+    scene_draft_llm_gateway: LlmGateway | None = None,
     scene_plan_task_type: str = DEFAULT_TASK_TYPE,
     scene_plan_repair_task_type: str = DEFAULT_REPAIR_TASK_TYPE,
     scene_draft_task_type: str = DRAFT_TASK_TYPE,
@@ -308,6 +313,9 @@ def create_app(
     application.state.audit_writer = writer
     application.state.llm_gateway = llm_gateway or LlmGateway(
         FakeProvider(), audit_writer=writer
+    )
+    application.state.scene_draft_llm_gateway = scene_draft_llm_gateway or LlmGateway(
+        DeepSeekProvider(), audit_writer=writer
     )
     application.state.scene_plan_task_type = scene_plan_task_type
     application.state.scene_plan_repair_task_type = scene_plan_repair_task_type

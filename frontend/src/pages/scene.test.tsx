@@ -1,9 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
+  DEEPSEEK_PROVIDER,
+  draftJobsPath,
   fakeDraftJobsPath,
   fakeExtractJobsPath,
   fakeSceneSummaryJobsPath,
+  STATIC_CONTEXT_PACK_ID,
   shuttleDraftPromptPath,
   shuttleDraftsPath,
   shuttleExtractPromptPath,
@@ -266,5 +269,58 @@ describe("scene shuttle buttons hit shuttle paths, not Fake jobs", () => {
       shuttleSceneSummariesPath("proj-1", "scene-1"),
     );
     expect(String(mutating[0]?.[0])).not.toContain("/summaries/jobs");
+  });
+
+  it("DeepSeek generate button hits drafts/jobs with provider=deepseek", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/scenes")) {
+        return jsonResponse({ scenes: [SCENE] });
+      }
+      if (url.includes("/plans/current")) {
+        return jsonResponse({
+          snapshot_id: "snap-1",
+          plan: { id: "plan-1" },
+        });
+      }
+      if (url.includes("/drafts") && !url.includes("/shuttle") && !url.includes("/jobs")) {
+        return jsonResponse({ items: [DRAFT] });
+      }
+      if (url.includes("/candidate-changes")) {
+        return jsonResponse({ items: [] });
+      }
+      if (url.includes(draftJobsPath("proj-1", "scene-1"))) {
+        return jsonResponse({
+          state: "succeeded",
+          draft_id: "draft-2",
+          writes_canon: false,
+          auto_approved: false,
+        });
+      }
+      return jsonResponse({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<ScenePage projectId="proj-1" />);
+
+    await screen.findByRole("button", { name: "用 DeepSeek 生成本场正文" });
+    await user.click(screen.getByRole("button", { name: "用 DeepSeek 生成本场正文" }));
+    expect(
+      await screen.findByText("已用 DeepSeek 生成本场正文（未批准，未写 Canon）"),
+    ).toBeInTheDocument();
+
+    const mutating = fetchMock.mock.calls.filter(([, init]) => {
+      const method = init && "method" in init ? String(init.method) : "GET";
+      return method === "POST";
+    });
+    expect(mutating).toHaveLength(1);
+    expect(String(mutating[0]?.[0])).toContain(draftJobsPath("proj-1", "scene-1"));
+    expect(String(mutating[0]?.[0])).not.toContain("/shuttle/");
+    const body = JSON.parse(String(mutating[0]?.[1]?.body ?? "{}")) as {
+      provider?: string;
+      context_pack_id?: string;
+    };
+    expect(body.provider).toBe(DEEPSEEK_PROVIDER);
+    expect(body.context_pack_id).toBe(STATIC_CONTEXT_PACK_ID);
   });
 });
