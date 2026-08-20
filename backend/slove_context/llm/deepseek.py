@@ -177,7 +177,8 @@ class DeepSeekProvider(Provider):
         raw: dict[str, Any],
         error: GenerateError | None,
     ) -> GenerateResponse:
-        usage_raw = raw.get("usage") if isinstance(raw.get("usage"), dict) else {}
+        usage_value = raw.get("usage")
+        usage_raw: dict[str, Any] = usage_value if isinstance(usage_value, dict) else {}
         usage = Usage(
             prompt_tokens=int(usage_raw.get("prompt_tokens", 0)),
             completion_tokens=int(usage_raw.get("completion_tokens", 0)),
