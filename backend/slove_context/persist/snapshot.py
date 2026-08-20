@@ -57,7 +57,7 @@ def _as_dict(item: Any) -> dict[str, Any]:
 
 
 def _model(cls: type[T], data: dict[str, Any], **overrides: Any) -> T:
-    names = {field.name for field in fields(cls)}
+    names = set(getattr(cls, "__dataclass_fields__", {}))
     payload = {key: value for key, value in data.items() if key in names}
     payload.update(overrides)
     return cls(**payload)
@@ -94,9 +94,7 @@ def dump_book(bundle: BookBundle) -> dict[str, Any]:
     return {
         "version": SNAPSHOT_VERSION,
         "story": {
-            "projects": {
-                key: _as_dict(item) for key, item in story.projects.items()
-            },
+            "projects": {key: _as_dict(item) for key, item in story.projects.items()},
             "specs": {key: _as_dict(item) for key, item in story.specs.items()},
         },
         "scene": {
@@ -117,9 +115,7 @@ def dump_book(bundle: BookBundle) -> dict[str, Any]:
             "entities": {key: _as_dict(item) for key, item in canon.entities.items()},
             "evidence": {key: _as_dict(item) for key, item in canon.evidence.items()},
             "facts": {key: _as_dict(item) for key, item in canon.facts.items()},
-            "snapshots": {
-                key: _as_dict(item) for key, item in canon.snapshots.items()
-            },
+            "snapshots": {key: _as_dict(item) for key, item in canon.snapshots.items()},
         },
         "candidate_change": {
             "jobs": {key: _as_dict(item) for key, item in candidates.jobs.items()},
@@ -153,11 +149,13 @@ def apply_snapshot(payload: dict[str, Any], bundle: BookBundle) -> None:
     story.projects = _map_models(StoryProject, story_raw.get("projects"))
     story.specs = {}
     for spec_id, spec_data in dict(story_raw.get("specs") or {}).items():
-        versions = [
+        spec_versions = [
             _model(StorySpecVersion, dict(item))
             for item in spec_data.get("versions") or []
         ]
-        story.specs[str(spec_id)] = _model(StorySpec, dict(spec_data), versions=versions)
+        story.specs[str(spec_id)] = _model(
+            StorySpec, dict(spec_data), versions=spec_versions
+        )
 
     scene.arcs = _map_models(Arc, scene_raw.get("arcs"))
     scene.chapters = _map_models(Chapter, scene_raw.get("chapters"))
@@ -174,7 +172,7 @@ def apply_snapshot(payload: dict[str, Any], bundle: BookBundle) -> None:
         plan_id = str(item.get("plan_id") or "")
         if project_id and scene_id and plan_id:
             current_map[(project_id, scene_id)] = plan_id
-    setattr(plans, "_current", current_map)
+    plans._current = current_map
 
     drafts.jobs = _map_models(SceneDraftJob, draft_raw.get("jobs"))
     drafts.drafts = _map_models(SceneDraft, draft_raw.get("drafts"))
@@ -183,14 +181,18 @@ def apply_snapshot(payload: dict[str, Any], bundle: BookBundle) -> None:
     canon.evidence = _map_models(EvidenceRecord, canon_raw.get("evidence"))
     canon.facts = {}
     for fact_id, fact_data in dict(canon_raw.get("facts") or {}).items():
-        versions = [
+        fact_versions = [
             _model(CanonFactVersion, dict(item))
             for item in fact_data.get("versions") or []
         ]
-        canon.facts[str(fact_id)] = _model(CanonFact, dict(fact_data), versions=versions)
+        canon.facts[str(fact_id)] = _model(
+            CanonFact, dict(fact_data), versions=fact_versions
+        )
     canon.snapshots = _map_models(CanonSnapshot, canon_raw.get("snapshots"))
 
     candidates.jobs = _map_models(ExtractJob, candidate_raw.get("jobs"))
-    candidates.candidates = _map_models(CandidateChange, candidate_raw.get("candidates"))
+    candidates.candidates = _map_models(
+        CandidateChange, candidate_raw.get("candidates")
+    )
 
     packs.packs = _map_models(ContextPack, pack_raw.get("packs"))

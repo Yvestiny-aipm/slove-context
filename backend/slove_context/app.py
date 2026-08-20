@@ -280,9 +280,7 @@ def create_app(
     scene_repo = scene_repository or InMemorySceneRepository()
     scene_plan_repo = scene_plan_repository or InMemoryScenePlanRepository()
     scene_draft_repo = scene_draft_repository or InMemorySceneDraftRepository()
-    candidate_repo = (
-        candidate_change_repository or InMemoryCandidateChangeRepository()
-    )
+    candidate_repo = candidate_change_repository or InMemoryCandidateChangeRepository()
     context_pack_repo = context_pack_repository or InMemoryContextPackRepository()
     any_repo_injected = any(
         item is not None
@@ -322,6 +320,13 @@ def create_app(
         candidate_repo,
         context_pack_repo,
     ):
+        assert isinstance(story_repo, InMemoryStoryRepository)
+        assert isinstance(canon_repo, InMemoryCanonRepository)
+        assert isinstance(scene_repo, InMemorySceneRepository)
+        assert isinstance(scene_plan_repo, InMemoryScenePlanRepository)
+        assert isinstance(scene_draft_repo, InMemorySceneDraftRepository)
+        assert isinstance(candidate_repo, InMemoryCandidateChangeRepository)
+        assert isinstance(context_pack_repo, InMemoryContextPackRepository)
         persist_store = FileBookStore(
             resolved_persist,
             BookBundle(

@@ -197,7 +197,9 @@ def _import_candidate(
     return imported.json()["items"][0]
 
 
-def _approve_four_facts(client: TestClient, project_id: str, scene_id: str) -> list[str]:
+def _approve_four_facts(
+    client: TestClient, project_id: str, scene_id: str
+) -> list[str]:
     fact_ids: list[str] = []
     for name, predicate, value in HARD_FACTS:
         entity = client.post(

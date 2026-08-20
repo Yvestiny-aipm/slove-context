@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from slove_context.persist.snapshot import (
     SNAPSHOT_VERSION,
@@ -59,9 +60,7 @@ class FlushingProxy:
 
 
 def _is_write_method(name: str) -> bool:
-    return name in {"add", "save"} or name.startswith("add_") or name.startswith(
-        "save_"
-    )
+    return name in {"add", "save"} or name.startswith(("add_", "save_"))
 
 
 def flushing_proxy(inner: Any, flush: Callable[[], None]) -> Any:
