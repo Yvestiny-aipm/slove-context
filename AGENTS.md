@@ -740,3 +740,29 @@ make frontend-test
 - 场景页两个控件只打 shuttle 路径，不打 `summaries/jobs`。无新页面。无章页则只保留 API。
 - **不得**调用真实模型、写入 API Key、自动批准 / 自动提交 Canon、改 4.3 Fake 作业、改 9.3 发布门、改写 9.1 expected / 9.2 历史语义，或新增生产 seed-status HTTP。
 - 发布 / 穿梭路径都 **没有写 Canon**。
+
+## 命令示例（节点 UI.4）
+
+主编可用 DeepSeek 为已有 Scene Card 生成一场 Scene Draft 散文，再走既有抽取 / 审校。UI.2 / UI.3 穿梭保持。plan / extract / summary 等 Fake 作业保持原样。
+
+```bash
+make format
+make lint
+make typecheck
+make test
+make frontend-test
+```
+
+`make test` 覆盖既有 2.1–9.3 / UI.1 / UI.2 / UI.3 进程内测试，以及 UI.4 DeepSeek 写稿（mock 成功落 Generated 且 `generation_model=deepseek-v4-flash`、缺 / 空 `DEEPSEEK_API_KEY` 拒绝且不落正文、HTTP 4xx/5xx / 超时失败且不写 Canon、穿梭仍可用、不连 api.deepseek.com）。不连 Postgres。无生产 seed-status HTTP。
+
+## 节点 UI.4 边界
+
+- DeepSeekProvider：官方 cheap chat `deepseek-v4-flash`；`POST https://api.deepseek.com/chat/completions`；`thinking: {"type": "disabled"}`；密钥只读环境变量 `DEEPSEEK_API_KEY`。
+- 一场 Scene Draft：走既有 `POST .../drafts/jobs`（`provider=deepseek`），不可变 Generated 修订，进入既有 list/get。
+- UI.2 / UI.3 穿梭门保持可用，行为不变。
+- 缺密钥 / 超时 / HTTP 4xx/5xx：机器可读错误；不落假散文；不写 Canon。
+- 不自动批准。候选仍不是 Canon。
+- 其他作业保持 Fake。3.4 Fake `drafts/jobs`（省略 provider）仍可用。
+- 测试必须 mock HTTP。不得把真实密钥写入日志、审计、夹具、`.env.example`、提交说明。
+- **不得**启动 UI.5 / 10.x、章级生成、第二供应商、自动批准 / 自动提交 Canon，或改写 9.1 expected / 9.2 历史语义。
+- 发布 / 穿梭 / DeepSeek 写稿路径都 **没有写 Canon**。

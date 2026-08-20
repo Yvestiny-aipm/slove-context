@@ -1,18 +1,24 @@
-"""Swappable LLM Gateway (node 3.2). Fake Provider only.
+"""Swappable LLM Gateway (node 3.2 + UI.4 DeepSeek).
 
-No live vendor HTTP. Scene Plan jobs live in scene_plan (node 3.3) and
-call generate_structured. Scene Draft jobs live in scene_draft (node 3.4)
-and call generate_text. Candidate Change extract jobs live in
-candidate_change (node 4.1) and call generate_structured. Scene /
-Chapter summary jobs live in summary (node 4.3) and call generate_text.
-This package does not persist plans, drafts, candidates, or summaries.
-No Canon writes.
-generate_* are idempotent reads with no persist side effects.
+Fake Provider remains the default for plan / extract / summary / style /
+eval jobs. Node UI.4 adds DeepSeekProvider for one-scene Scene Draft
+generate_text only. generate_* stay idempotent reads: no Canon persist,
+no draft persist. Scene Draft persistence stays in scene_draft.
 """
 
+from slove_context.llm.deepseek import (
+    DEEPSEEK_API_KEY_ENV,
+    DEEPSEEK_CHAT_URL,
+    DEEPSEEK_MODEL,
+    DEEPSEEK_PROVIDER_NAME,
+    DeepSeekProvider,
+    deepseek_api_key_configured,
+)
 from slove_context.llm.errors import (
     LlmError,
+    MissingApiKeyError,
     NonIdempotentRetryError,
+    ProviderHttpError,
     ProviderTimeoutError,
     ProviderTransientError,
     RetriesExhaustedError,
@@ -29,19 +35,27 @@ from slove_context.llm.types import (
 )
 
 __all__ = [
+    "DEEPSEEK_API_KEY_ENV",
+    "DEEPSEEK_CHAT_URL",
+    "DEEPSEEK_MODEL",
+    "DEEPSEEK_PROVIDER_NAME",
     "IDEMPOTENT_GENERATE_OPS",
+    "DeepSeekProvider",
     "FakeProvider",
     "GenerateError",
     "GenerateRequest",
     "GenerateResponse",
     "LlmError",
     "LlmGateway",
+    "MissingApiKeyError",
     "NonIdempotentRetryError",
     "Provider",
+    "ProviderHttpError",
     "ProviderTimeoutError",
     "ProviderTransientError",
     "RetriesExhaustedError",
     "RetryPolicy",
     "StructuredParseError",
     "Usage",
+    "deepseek_api_key_configured",
 ]

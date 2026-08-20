@@ -150,7 +150,7 @@ describe("key views render", () => {
   it("renders the isolated banner text", () => {
     render(<Banner />);
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Demo / Fake Provider / 非真实模型",
+      "Demo / Fake Provider / DeepSeek 可配置 / 非自动批准",
     );
   });
 });

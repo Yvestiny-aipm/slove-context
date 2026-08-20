@@ -367,7 +367,11 @@ def test_llm_package_has_no_vendor_http_or_scene_plan_job() -> None:
     )
     for path in LLM_DIR.glob("*.py"):
         text = path.read_text(encoding="utf-8")
-        for name in forbidden:
+        blocked = forbidden
+        if path.name == "deepseek.py":
+            # Node UI.4: DeepSeekProvider may use httpx. No second vendor SDK.
+            blocked = tuple(name for name in forbidden if name != "httpx")
+        for name in blocked:
             assert f"import {name}" not in text
             assert f"from {name}" not in text
         assert "def generate_scene_plan" not in text

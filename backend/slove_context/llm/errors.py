@@ -33,3 +33,15 @@ class NonIdempotentRetryError(LlmError):
     already persisted audit + state, they must not ask generate_* to retry
     that persist. Use invoke_once for those paths; it runs exactly once.
     """
+
+
+class MissingApiKeyError(LlmError):
+    """Vendor env key is missing or empty. Refuse before any HTTP."""
+
+
+class ProviderHttpError(LlmError):
+    """Vendor HTTP returned 4xx/5xx. generate_* is still a read: no persist."""
+
+    def __init__(self, status_code: int, message: str) -> None:
+        self.status_code = status_code
+        super().__init__(message)
